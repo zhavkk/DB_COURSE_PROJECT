@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"dbproject/internal/models"
+	"log"
 )
 
 // CreateServiceReport - создание нового отчета о выполненной услуге
@@ -31,6 +32,40 @@ func GetServiceReportByID(id int64) (*models.ServiceReport, error) {
 	}
 
 	return &report, nil
+}
+
+// GetAllServiceReports - получает все отчеты о выполнении услуг
+func GetAllServiceReports() ([]models.ServiceReport, error) {
+	// SQL-запрос для получения всех отчетов
+	query := `SELECT id, request_id, report_text, feedback FROM service_reports`
+
+	// Выполняем запрос
+	rows, err := DB.Query(query)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Считываем все строки и создаем список отчетов
+	var reports []models.ServiceReport
+	for rows.Next() {
+		var report models.ServiceReport
+		err := rows.Scan(&report.ID, &report.RequestID, &report.ReportText, &report.Feedback)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		reports = append(reports, report)
+	}
+
+	// Проверка на ошибки после чтения всех строк
+	if err := rows.Err(); err != nil {
+		log.Println("Error during row iteration:", err)
+		return nil, err
+	}
+
+	return reports, nil
 }
 
 // UpdateServiceReport - обновление отчета
