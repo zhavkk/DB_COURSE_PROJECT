@@ -30,6 +30,21 @@ func GetUserByID(id int64) (*models.User, error) {
 
 	return &user, nil
 }
+func GetUserByLogin(Login string) (*models.User, error) {
+	query := `SELECT id,role_id,login,password_hash FROM users WHERE login = $1`
+	row := DB.QueryRow(query, Login)
+
+	var user models.User
+	err := row.Scan(&user.ID, &user.RoleID, &user.Login, &user.PasswordHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
 func GetAllUsers() ([]models.User, error) {
 	query := `SELECT * FROM users`
 	rows, err := DB.Query(query)
