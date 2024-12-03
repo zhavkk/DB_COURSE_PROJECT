@@ -3,110 +3,112 @@ package controllers
 import (
 	"dbproject/internal/db"
 	"dbproject/internal/models"
+	"dbproject/internal/utils"
 	"encoding/json"
 	"net/http"
-	"strconv"
+
+	"github.com/go-playground/validator/v10"
 )
 
-// GetAllEmployees - Обработчик для получения всех сотрудников
-func GetAllEmployees(w http.ResponseWriter, r *http.Request) {
+var validate = validator.New()
+
+// GetEmployeesHandler возвращает список всех сотрудников
+func GetEmployeesHandler(w http.ResponseWriter, r *http.Request) {
 	employees, err := db.GetAllEmployees()
 	if err != nil {
-		http.Error(w, "Error retrieving employees", http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving employees: "+err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(employees)
+	utils.ResponseWithJson(w, http.StatusOK, employees)
 }
 
-// GetEmployeeByID - Обработчик для получения сотрудника по ID
-func GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
-	idParam := r.URL.Query().Get("id")
-	id, err := strconv.ParseInt(idParam, 10, 64)
+// GetEmployeeByIDHandler возвращает сотрудника по ID
+func GetEmployeeByIDHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	employee, err := db.GetEmployeeByID(id)
 	if err != nil {
-		http.Error(w, "Error retrieving employee", http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving employee: "+err.Error())
 		return
 	}
 
-	if employee.ID == 0 {
-		http.Error(w, "Employee not found", http.StatusNotFound)
+	if employee == nil {
+		utils.ResponseWithError(w, http.StatusNotFound, "Employee not found")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(employee)
+	utils.ResponseWithJson(w, http.StatusOK, employee)
 }
 
-// CreateEmployee - Обработчик для создания нового сотрудника
-func CreateEmployee(w http.ResponseWriter, r *http.Request) {
+// CreateEmployeeHandler создаёт нового сотрудника
+func CreateEmployeeHandler(w http.ResponseWriter, r *http.Request) {
 	var newEmployee models.Employee
-	err := json.NewDecoder(r.Body).Decode(&newEmployee)
-	if err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&newEmployee); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
 		return
 	}
 
-	err = db.CreateEmployee(&newEmployee)
-	if err != nil {
-		http.Error(w, "Error creating employee", http.StatusInternalServerError)
+	// Валидация сотрудника
+	if err := validate.Struct(newEmployee); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newEmployee)
+	if err := db.CreateEmployee(&newEmployee); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error creating employee: "+err.Error())
+		return
+	}
+
+	utils.ResponseWithJson(w, http.StatusCreated, newEmployee)
 }
 
-// UpdateEmployee - Обработчик для обновления данных сотрудника
-func UpdateEmployee(w http.ResponseWriter, r *http.Request) {
-	idParam := r.URL.Query().Get("id")
-	id, err := strconv.ParseInt(idParam, 10, 64)
+// UpdateEmployeeHandler обновляет данные сотрудника
+func UpdateEmployeeHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var updatedEmployee models.Employee
-	err = json.NewDecoder(r.Body).Decode(&updatedEmployee)
-	if err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&updatedEmployee); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
+		return
+	}
+
+	// Валидация сотрудника
+	if err := validate.Struct(updatedEmployee); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
 		return
 	}
 
 	updatedEmployee.ID = id
 
-	err = db.UpdateEmployee(&updatedEmployee)
-	if err != nil {
-		http.Error(w, "Error updating employee", http.StatusInternalServerError)
+	if err := db.UpdateEmployee(&updatedEmployee); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error updating employee: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(updatedEmployee)
+	utils.ResponseWithJson(w, http.StatusOK, updatedEmployee)
 }
 
-// DeleteEmployee - Обработчик для удаления сотрудника
-func DeleteEmployee(w http.ResponseWriter, r *http.Request) {
-	idParam := r.URL.Query().Get("id")
-	id, err := strconv.ParseInt(idParam, 10, 64)
+// DeleteEmployeeHandler удаляет сотрудника по ID
+func DeleteEmployeeHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = db.DeleteEmployee(id)
-	if err != nil {
-		http.Error(w, "Error deleting employee", http.StatusInternalServerError)
+	if err := db.DeleteEmployee(id); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error deleting employee: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

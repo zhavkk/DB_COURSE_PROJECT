@@ -3,124 +3,106 @@ package controllers
 import (
 	"dbproject/internal/db"
 	"dbproject/internal/models"
+	"dbproject/internal/utils"
 	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
-// GetAllServiceReports - обработчик для получения списка всех отчетов
-func GetAllServiceReports(w http.ResponseWriter, r *http.Request) {
+// GetAllServiceReportsHandler возвращает список всех отчетов
+func GetAllServiceReportsHandler(w http.ResponseWriter, r *http.Request) {
 	reports, err := db.GetAllServiceReports()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving service reports: "+err.Error())
 		return
 	}
 
-	// Преобразуем список отчетов в JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(reports)
+	utils.ResponseWithJson(w, http.StatusOK, reports)
 }
 
-// GetServiceReportByID - обработчик для получения отчета по ID
-func GetServiceReportByID(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+// GetServiceReportByIDHandler возвращает отчет по ID
+func GetServiceReportByIDHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	report, err := db.GetServiceReportByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving service report: "+err.Error())
 		return
 	}
 
 	if report == nil {
-		http.Error(w, "Service report not found", http.StatusNotFound)
+		utils.ResponseWithError(w, http.StatusNotFound, "Service report not found")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(report)
+	utils.ResponseWithJson(w, http.StatusOK, report)
 }
 
-// CreateServiceReport - обработчик для создания нового отчета
-func CreateServiceReport(w http.ResponseWriter, r *http.Request) {
+// CreateServiceReportHandler создаёт новый отчет
+func CreateServiceReportHandler(w http.ResponseWriter, r *http.Request) {
 	var report models.ServiceReport
-	err := json.NewDecoder(r.Body).Decode(&report)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
 		return
 	}
 
-	err = db.CreateServiceReport(&report)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Валидация отчета
+	if err := validate.Struct(report); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(report)
+	if err := db.CreateServiceReport(&report); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error creating service report: "+err.Error())
+		return
+	}
+
+	utils.ResponseWithJson(w, http.StatusCreated, report)
 }
 
-// UpdateServiceReport - обработчик для обновления отчета
-func UpdateServiceReport(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+// UpdateServiceReportHandler обновляет отчет
+func UpdateServiceReportHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var report models.ServiceReport
-	err = json.NewDecoder(r.Body).Decode(&report)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
+		return
+	}
+
+	// Валидация отчета
+	if err := validate.Struct(report); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
 		return
 	}
 
 	report.ID = id
 
-	err = db.UpdateServiceReport(&report)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := db.UpdateServiceReport(&report); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error updating service report: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(report)
+	utils.ResponseWithJson(w, http.StatusOK, report)
 }
 
-// DeleteServiceReport - обработчик для удаления отчета
-func DeleteServiceReport(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
+// DeleteServiceReportHandler удаляет отчет по ID
+func DeleteServiceReportHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDFromPath(r, "id")
+	if err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
-		return
-	}
-
-	err = db.DeleteServiceReport(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := db.DeleteServiceReport(id); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error deleting service report: "+err.Error())
 		return
 	}
 

@@ -3,117 +3,124 @@ package controllers
 import (
 	"dbproject/internal/db"
 	"dbproject/internal/models"
+	"dbproject/internal/utils"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
+// Helper function to parse ID from path
+func parseIDFromPath(r *http.Request, key string) (int64, error) {
+	vars := mux.Vars(r)
+	idStr, exists := vars[key]
+	if !exists || idStr == "" {
+		return 0, fmt.Errorf("ID is required")
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid ID format")
+	}
+	return id, nil
+}
+
+// CreateClientHandler создаёт нового клиента
 func CreateClientHandler(w http.ResponseWriter, r *http.Request) {
 	var client models.Client
 
 	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
-	err := db.CreateClient(&client)
-
-	if err != nil {
-		http.Error(w, "Failed  ", http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(client)
+	// Валидация клиента
+	if err := validate.Struct(client); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
+		return
+	}
 
+	if err := db.CreateClient(&client); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Failed to create client: "+err.Error())
+		return
+	}
+
+	utils.ResponseWithJson(w, http.StatusCreated, client)
 }
 
+// GetClientsHandler возвращает список всех клиентов
 func GetClientsHandler(w http.ResponseWriter, r *http.Request) {
 	clients, err := db.GetAllClients()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving clients: "+err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(clients)
+
+	utils.ResponseWithJson(w, http.StatusOK, clients)
 }
 
+// GetClientHandler возвращает клиента по ID
 func GetClientHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
+	id, err := parseIDFromPath(r, "id")
+	if err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
 	client, err := db.GetClientByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving client: "+err.Error())
 		return
 	}
 	if client == nil {
-		http.Error(w, "Client not found", http.StatusNotFound)
+		utils.ResponseWithError(w, http.StatusNotFound, "Client not found")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(client)
+
+	utils.ResponseWithJson(w, http.StatusOK, client)
 }
 
-// UpdateClient - обработчик для обновления информации о клиенте
+// UpdateClientHandler обновляет информацию о клиенте
 func UpdateClientHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var client models.Client
-	err = json.NewDecoder(r.Body).Decode(&client)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
+		return
+	}
+
+	// Валидация клиента
+	if err := validate.Struct(client); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
 		return
 	}
 
 	client.ID = id
 
-	err = db.UpdateClient(&client)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := db.UpdateClient(&client); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error updating client: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(client)
+	utils.ResponseWithJson(w, http.StatusOK, client)
 }
 
-// DeleteClient - обработчик для удаления клиента
+// DeleteClientHandler удаляет клиента по ID
 func DeleteClientHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
+	id, err := parseIDFromPath(r, "id")
+	if err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
-		return
-	}
-
-	err = db.DeleteClient(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := db.DeleteClient(id); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error deleting client: "+err.Error())
 		return
 	}
 

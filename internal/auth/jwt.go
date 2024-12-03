@@ -1,27 +1,35 @@
 package auth
 
 import (
+	"dbproject/internal/common"
 	"dbproject/internal/models"
 	"errors"
+	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 )
 
-var jwtKey = []byte("mishanyaBOSS")
+var jwtKey []byte
 
-type Claims struct { // struct that will be used for perfoming data to JWT token
-	UserID int64 `json:"user_id"`
-	Role   int64 `json:"role"`
-	jwt.StandardClaims
+func init() {
+	// Загружаем ключ из переменной окружения
+	key := os.Getenv("JWT_SECRET_KEY")
+	if key == "" {
+		panic("JWT_SECRET_KEY environment variable is not set")
+	}
+	jwtKey = []byte(key)
 }
 
-func GenerateJWT(user models.User) (string, error) { // generate JWT token for our user
-	claims := &Claims{
+// GenerateJWT генерирует JWT токен для пользователя
+func GenerateJWT(user models.User) (string, error) {
+	claims := &common.Claims{
 		UserID: user.ID,
 		Role:   user.RoleID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
+			IssuedAt:  time.Now().Unix(),
+			Issuer:    "dbproject",
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -32,17 +40,18 @@ func GenerateJWT(user models.User) (string, error) { // generate JWT token for o
 	return signedToken, nil
 }
 
-func VerifyJWT(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+// VerifyJWT проверяет валидность JWT токена и возвращает claims
+func VerifyJWT(tokenString string) (*common.Claims, error) {
+	claims := &common.Claims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
 	if err != nil {
-		return nil, errors.New("Invalid or expired token")
+		return nil, errors.New("invalid or expired token")
 	}
-	claims, ok := token.Claims.(*Claims)
-	if !ok {
-		return nil, errors.New("invalid claims")
+	if !token.Valid {
+		return nil, errors.New("invalid token")
 	}
 	return claims, nil
-
 }

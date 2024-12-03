@@ -1,48 +1,90 @@
 package routes
 
 import (
+	"dbproject/internal/auth"
 	"dbproject/internal/controllers"
+	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func InitializeRoutes() *mux.Router {
-	r := mux.NewRouter()
-	//users
-	r.HandleFunc("/users", controllers.CreateUserHandler).Methods("POST")
-	r.HandleFunc("/users/{id}", controllers.GetUserHandler).Methods("GET")
-	r.HandleFunc("/users", controllers.GetUsersHandler).Methods("GET")
-	r.HandleFunc("/users/{id}", controllers.UpdateUserHandler).Methods("PUT")
-	r.HandleFunc("/users/{id}", controllers.DeleteUserHandler).Methods("DELETE")
-	//clients
-	r.HandleFunc("/clients", controllers.GetClientHandler).Methods("GET")
-	r.HandleFunc("/clients/", controllers.GetClientsHandler).Methods("GET")
-	r.HandleFunc("/clients/create", controllers.CreateClientHandler).Methods("POST")
-	r.HandleFunc("/clients/update", controllers.UpdateClientHandler).Methods("PUT")
-	r.HandleFunc("/clients/delete", controllers.DeleteClientHandler).Methods("DELETE")
-	//services
-	r.HandleFunc("/services", controllers.CreateServiceHandler).Methods("POST")
-	r.HandleFunc("/services/{id}", controllers.GetServiceHandler).Methods("GET")
-	r.HandleFunc("/services", controllers.GetServicesHandler).Methods("GET")
-	r.HandleFunc("/services/{id}", controllers.UpdateServiceHandler).Methods("PUT")
-	r.HandleFunc("/services/{id}", controllers.DeleteServiceHandler).Methods("DELETE")
-	//serviceRequests
-	r.HandleFunc("/service_request", controllers.CreateServiceRequestHandler).Methods("POST")
-	r.HandleFunc("/service_requests/{id}", controllers.GetServiceRequestHandler).Methods("GET")
-	r.HandleFunc("/service_requests", controllers.GetServiceRequestsHandler).Methods("GET")
-	r.HandleFunc("/service_requests/{id}", controllers.UpdateServiceRequestHandler).Methods("PUT")
-	r.HandleFunc("/service_requests/{id}", controllers.DeleteServiceRequestHandler).Methods("DELETE")
-	//serviceReports
-	r.HandleFunc("/service-reports", controllers.GetAllServiceReports).Methods("GET")
-	r.HandleFunc("/service-reports/", controllers.GetServiceReportByID).Methods("GET") // Используем URL-параметр для ID
-	r.HandleFunc("/service-reports/create", controllers.CreateServiceReport).Methods("POST")
-	r.HandleFunc("/service-reports/update", controllers.UpdateServiceReport).Methods("PUT")
-	r.HandleFunc("/service-reports/delete", controllers.DeleteServiceReport).Methods("DELETE")
-	//employee
-	r.HandleFunc("/employees", controllers.GetAllEmployees).Methods("GET")
-	r.HandleFunc("/employees/", controllers.GetEmployeeByID).Methods("GET") // Используем URL-параметр для ID
-	r.HandleFunc("/employees/{id}", controllers.CreateEmployee).Methods("POST")
-	r.HandleFunc("/employees/{id}", controllers.UpdateEmployee).Methods("PUT")
-	r.HandleFunc("/employees/{id}", controllers.UpdateEmployee).Methods("DELETE")
-	return r
+// SetupRoutes - настройка всех маршрутов
+func SetupRoutes(r *mux.Router) {
+	// Маршруты для аутентификации и регистрации
+	r.HandleFunc("/login", auth.LoginUser).Methods("POST")
+	r.HandleFunc("/register", auth.RegisterUser).Methods("POST")
+
+	// Защищённые маршруты для пользователей, доступные только после аутентификации
+
+	// /users - только администратор
+	usersHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1)(
+			http.HandlerFunc(controllers.GetUsersHandler),
+		),
+	)
+	r.Handle("/users", usersHandler).Methods("GET")
+
+	// /clients - администратор и сотрудник
+	clientsHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.GetClientsHandler),
+		),
+	)
+	r.Handle("/clients", clientsHandler).Methods("GET")
+
+	// /service_requests - администратор и сотрудник
+	serviceRequestsHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.GetServiceRequestsHandler),
+		),
+	)
+	r.Handle("/service_requests", serviceRequestsHandler).Methods("GET")
+
+	// /service_reports - администратор и сотрудник
+	serviceReportsHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.GetAllServiceReportsHandler),
+		),
+	)
+	r.Handle("/service_reports", serviceReportsHandler).Methods("GET")
+
+	// /service_requests/{id} - администратор и сотрудник
+	serviceRequestByIDHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.GetServiceRequestHandler),
+		),
+	)
+	r.Handle("/service_requests/{id:[0-9]+}", serviceRequestByIDHandler).Methods("GET")
+
+	// Создание заявки - клиент и сотрудник
+	createServiceRequestHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(2, 3)(
+			http.HandlerFunc(controllers.CreateServiceRequestHandler),
+		),
+	)
+	r.Handle("/service_requests", createServiceRequestHandler).Methods("POST")
+
+	// Создание отчёта - сотрудник и администратор
+	createServiceReportHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.CreateServiceReportHandler),
+		),
+	)
+	r.Handle("/service_reports", createServiceReportHandler).Methods("POST")
+
+	// /employees - только администратор
+	employeesHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1)(
+			http.HandlerFunc(controllers.GetEmployeesHandler),
+		),
+	)
+	r.Handle("/employees", employeesHandler).Methods("GET")
+
+	// /roles - только администратор
+	rolesHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1)(
+			http.HandlerFunc(controllers.GetRolesHandler),
+		),
+	)
+	r.Handle("/roles", rolesHandler).Methods("GET")
 }

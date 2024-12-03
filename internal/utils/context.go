@@ -2,24 +2,25 @@ package utils
 
 import (
 	"context"
+	"errors"
+
+	"dbproject/internal/common"
 )
 
 type contextKey string
 
-const UserIDKey contextKey = "user_id"
-const UserRoleKey contextKey = "user_role"
+const userContextKey = contextKey("user")
 
-// Функция для получения данных пользователя из контекста
-func GetUserFromContext(ctx context.Context) (int64, int64) {
-	userID, _ := ctx.Value(UserIDKey).(int64)
-	role, _ := ctx.Value(UserRoleKey).(int64)
-	return userID, role
+// GetUserFromContext извлекает UserID и Role из контекста
+func GetUserFromContext(ctx context.Context) (int64, int64, error) {
+	claims, ok := ctx.Value(userContextKey).(*common.Claims)
+	if !ok || claims == nil {
+		return 0, 0, errors.New("user not found in context")
+	}
+	return claims.UserID, claims.Role, nil
 }
 
-// Функция для установки данных пользователя в контекст
-func SetUserContext(ctx context.Context, userID, role int64) context.Context {
-	// Нужно дважды вызвать WithValue и правильно присваивать результат
-	ctx = context.WithValue(ctx, UserIDKey, userID)
-	ctx = context.WithValue(ctx, UserRoleKey, role)
-	return ctx
+// SetUserContext устанавливает claims в контекст
+func SetUserContext(ctx context.Context, claims *common.Claims) context.Context {
+	return context.WithValue(ctx, userContextKey, claims)
 }

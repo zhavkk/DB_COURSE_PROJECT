@@ -2,24 +2,22 @@ package utils
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
-// ResponseWithError отправляет ответ с ошибкой в формате JSON
-func ResponseWithError(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	response := map[string]string{"error": message}
-	json.NewEncoder(w).Encode(response)
+// ResponseWithError отправляет JSON-ответ с ошибкой
+func ResponseWithError(w http.ResponseWriter, code int, message string) {
+	ResponseWithJson(w, code, map[string]string{"error": message})
 }
 
-// ResponseWithJson отправляет успешный ответ с данными в формате JSON
-func ResponseWithJson(w http.ResponseWriter, statusCode int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	err := json.NewEncoder(w).Encode(payload)
+// ResponseWithJSON отправляет JSON-ответ с данными
+func ResponseWithJson(w http.ResponseWriter, code int, payload interface{}) {
+	response, err := json.Marshal(payload)
 	if err != nil {
-		log.Println("Error encoding response:", err)
+		http.Error(w, `{"error": "Internal Server Error"}`, http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }

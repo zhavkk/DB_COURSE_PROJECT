@@ -3,90 +3,107 @@ package controllers
 import (
 	"dbproject/internal/db"
 	"dbproject/internal/models"
+	"dbproject/internal/utils"
 	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
+// CreateServiceRequestHandler создает новый запрос на услугу
 func CreateServiceRequestHandler(w http.ResponseWriter, r *http.Request) {
-	var ServiceRequest models.ServiceRequest
-	if err := json.NewDecoder(r.Body).Decode(&ServiceRequest); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	err := db.CreateServiceRequest(&ServiceRequest)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var serviceRequest models.ServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&serviceRequest); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(ServiceRequest)
+	// Валидация serviceRequest
+	if err := validate.Struct(serviceRequest); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
+		return
+	}
+
+	if err := db.CreateServiceRequest(&serviceRequest); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Failed to create service request: "+err.Error())
+		return
+	}
+
+	utils.ResponseWithJson(w, http.StatusCreated, serviceRequest)
 }
 
+// GetServiceRequestHandler возвращает запрос на услугу по ID
 func GetServiceRequestHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	ServiceRequest, err := db.GetServiceByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ServiceRequest)
+	serviceRequest, err := db.GetServiceByID(id)
+	if err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving service request: "+err.Error())
+		return
+	}
+
+	if serviceRequest == nil {
+		utils.ResponseWithError(w, http.StatusNotFound, "Service request not found")
+		return
+	}
+
+	utils.ResponseWithJson(w, http.StatusOK, serviceRequest)
 }
 
+// GetServiceRequestsHandler возвращает все запросы на услугу
 func GetServiceRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	serviceRequests, err := db.GetAllServiceRequests()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Failed to retrieve service requests: "+err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(serviceRequests)
+	utils.ResponseWithJson(w, http.StatusOK, serviceRequests)
 }
 
+// UpdateServiceRequestHandler обновляет существующий запрос на услугу
 func UpdateServiceRequestHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	var ServiceRequest models.ServiceRequest
-	if err := json.NewDecoder(r.Body).Decode(&ServiceRequest); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	var serviceRequest models.ServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&serviceRequest); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
 		return
 	}
-	ServiceRequest.ID = id
-	err = db.UpdateServiceRequest(&ServiceRequest)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	// Валидация serviceRequest
+	if err := validate.Struct(serviceRequest); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ServiceRequest)
+
+	serviceRequest.ID = id
+
+	if err := db.UpdateServiceRequest(&serviceRequest); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Failed to update service request: "+err.Error())
+		return
+	}
+
+	utils.ResponseWithJson(w, http.StatusOK, serviceRequest)
 }
 
+// DeleteServiceRequestHandler удаляет запрос на услугу по ID
 func DeleteServiceRequestHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDFromPath(r, "id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = db.DeleteServiceRequest(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := db.DeleteServiceRequest(id); err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Failed to delete service request: "+err.Error())
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
-
 }
