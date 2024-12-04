@@ -3,14 +3,22 @@ package db
 import (
 	"database/sql"
 	"dbproject/internal/models"
+	"errors"
+	"fmt"
 )
 
+// CreateUser создает нового пользователя в базе данных
 func CreateUser(user *models.User) error {
-	query := `INSERT INTO users (role_id,login,password_hash) VALUES ($1,$2,$3) RETURNING id`
-	err := DB.QueryRow(query, user.RoleID, user.Login, user.PasswordHash).Scan(&user.ID)
-	if err != nil {
-		return err
+	if DB == nil {
+		return errors.New("database is not initialized")
 	}
+
+	query := "INSERT INTO users (login, password_hash, role_id) VALUES ($1, $2, $3) RETURNING id"
+	err := DB.QueryRow(query, user.Login, user.PasswordHash, user.RoleID).Scan(&user.ID)
+	if err != nil {
+		return fmt.Errorf("error creating user: %w", err)
+	}
+
 	return nil
 }
 
@@ -30,19 +38,25 @@ func GetUserByID(id int64) (*models.User, error) {
 
 	return &user, nil
 }
-func GetUserByLogin(Login string) (*models.User, error) {
-	query := `SELECT id,role_id,login,password_hash FROM users WHERE login = $1`
-	row := DB.QueryRow(query, Login)
+
+// GetUserByLogin возвращает пользователя по логину
+func GetUserByLogin(login string) (*models.User, error) {
+	if DB == nil {
+		return nil, errors.New("database is not initialized")
+	}
+
+	query := "SELECT id, login, password_hash, role_id FROM users WHERE login = $1"
+	row := DB.QueryRow(query, login)
 
 	var user models.User
-	err := row.Scan(&user.ID, &user.RoleID, &user.Login, &user.PasswordHash)
-
+	err := row.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.RoleID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, nil // Пользователь не найден
 		}
-		return nil, err
+		return nil, fmt.Errorf("error fetching user: %w", err)
 	}
+
 	return &user, nil
 }
 func GetAllUsers() ([]models.User, error) {

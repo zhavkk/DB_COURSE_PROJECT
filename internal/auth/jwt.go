@@ -12,7 +12,8 @@ import (
 
 var jwtKey []byte
 
-func init() {
+// InitJWTKey устанавливает значение jwtKey
+func InitJWTKey() {
 	// Загружаем ключ из переменной окружения
 	key := os.Getenv("JWT_SECRET_KEY")
 	if key == "" {
@@ -23,6 +24,10 @@ func init() {
 
 // GenerateJWT генерирует JWT токен для пользователя
 func GenerateJWT(user models.User) (string, error) {
+	if jwtKey == nil {
+		return "", errors.New("jwtKey is not initialized")
+	}
+
 	claims := &common.Claims{
 		UserID: user.ID,
 		Role:   user.RoleID,
@@ -42,6 +47,10 @@ func GenerateJWT(user models.User) (string, error) {
 
 // VerifyJWT проверяет валидность JWT токена и возвращает claims
 func VerifyJWT(tokenString string) (*common.Claims, error) {
+	if jwtKey == nil {
+		return nil, errors.New("jwtKey is not initialized")
+	}
+
 	claims := &common.Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {

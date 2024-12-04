@@ -1,3 +1,4 @@
+// internal/db/db.go
 package db
 
 import (
@@ -27,5 +28,7 @@ func InitDB(dataSourceName string) {
 }
 
 func CloseDB() {
-	DB.Close()
+	if DB != nil {
+		DB.Close()
+	}
 }
