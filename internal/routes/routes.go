@@ -10,6 +10,9 @@ import (
 
 // SetupRoutes - настройка всех маршрутов
 func SetupRoutes(r *mux.Router) {
+	// Добавляем middleware для CORS
+	r.Use(auth.CORS)
+
 	// Маршруты для аутентификации и регистрации
 	r.HandleFunc("/login", auth.LoginUser).Methods("POST")
 	r.HandleFunc("/register", auth.RegisterUser).Methods("POST")
