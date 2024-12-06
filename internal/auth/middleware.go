@@ -67,7 +67,7 @@ func RoleMiddleware(allowedRoles ...int64) func(http.Handler) http.Handler {
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Разрешаем доступ для всех источников
-		w.Header().Set("Access-Control-Allow-Origin", "*")                                // Разрешаем все источники
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8000")            // Разрешаем все источники
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS") // Разрешаем методы
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")     // Разрешаем заголовки
 

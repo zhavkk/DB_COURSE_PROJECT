@@ -14,8 +14,8 @@ func SetupRoutes(r *mux.Router) {
 	r.Use(auth.CORS)
 
 	// Маршруты для аутентификации и регистрации
-	r.HandleFunc("/login", auth.LoginUser).Methods("POST")
-	r.HandleFunc("/register", auth.RegisterUser).Methods("POST")
+	r.HandleFunc("/login", auth.LoginUser).Methods("POST", "OPTIONS")
+	r.HandleFunc("/register", auth.RegisterUser).Methods("POST", "OPTIONS")
 
 	// Защищённые маршруты для пользователей, доступные только после аутентификации
 
@@ -25,7 +25,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetUsersHandler),
 		),
 	)
-	r.Handle("/users", usersHandler).Methods("GET")
+	r.Handle("/users", usersHandler).Methods("GET", "OPTIONS")
 
 	// /clients - администратор и сотрудник
 	clientsHandler := auth.TokenVerifyMiddleware(
@@ -33,7 +33,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetClientsHandler),
 		),
 	)
-	r.Handle("/clients", clientsHandler).Methods("GET")
+	r.Handle("/clients", clientsHandler).Methods("GET", "OPTIONS")
 
 	// /service_requests - администратор и сотрудник
 	serviceRequestsHandler := auth.TokenVerifyMiddleware(
@@ -41,7 +41,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetServiceRequestsHandler),
 		),
 	)
-	r.Handle("/service_requests", serviceRequestsHandler).Methods("GET")
+	r.Handle("/service_requests", serviceRequestsHandler).Methods("GET", "OPTIONS")
 
 	// /service_reports - администратор и сотрудник
 	serviceReportsHandler := auth.TokenVerifyMiddleware(
@@ -49,7 +49,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetAllServiceReportsHandler),
 		),
 	)
-	r.Handle("/service_reports", serviceReportsHandler).Methods("GET")
+	r.Handle("/service_reports", serviceReportsHandler).Methods("GET", "OPTIONS")
 
 	// /service_requests/{id} - администратор и сотрудник
 	serviceRequestByIDHandler := auth.TokenVerifyMiddleware(
@@ -57,7 +57,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetServiceRequestHandler),
 		),
 	)
-	r.Handle("/service_requests/{id:[0-9]+}", serviceRequestByIDHandler).Methods("GET")
+	r.Handle("/service_requests/{id:[0-9]+}", serviceRequestByIDHandler).Methods("GET", "OPTIONS")
 
 	// Создание заявки - клиент и сотрудник
 	createServiceRequestHandler := auth.TokenVerifyMiddleware(
@@ -65,7 +65,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.CreateServiceRequestHandler),
 		),
 	)
-	r.Handle("/service_requests", createServiceRequestHandler).Methods("POST")
+	r.Handle("/service_requests", createServiceRequestHandler).Methods("POST", "OPTIONS")
 
 	// Создание отчёта - сотрудник и администратор
 	createServiceReportHandler := auth.TokenVerifyMiddleware(
@@ -73,7 +73,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.CreateServiceReportHandler),
 		),
 	)
-	r.Handle("/service_reports", createServiceReportHandler).Methods("POST")
+	r.Handle("/service_reports", createServiceReportHandler).Methods("POST", "OPTIONS")
 
 	// /employees - только администратор
 	employeesHandler := auth.TokenVerifyMiddleware(
@@ -81,7 +81,7 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetEmployeesHandler),
 		),
 	)
-	r.Handle("/employees", employeesHandler).Methods("GET")
+	r.Handle("/employees", employeesHandler).Methods("GET", "OPTIONS")
 
 	// /roles - только администратор
 	rolesHandler := auth.TokenVerifyMiddleware(
@@ -89,5 +89,5 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.GetRolesHandler),
 		),
 	)
-	r.Handle("/roles", rolesHandler).Methods("GET")
+	r.Handle("/roles", rolesHandler).Methods("GET", "OPTIONS")
 }
