@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function() {
             password: password,
             role_id: parseInt(role_id)  // Преобразуем роль в число
         };
-    
         console.log("Sending registration data:", data);
     
         fetch("http://localhost:8080/register", {
@@ -37,6 +36,8 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 alert("Registration successful!");
+                // Перенаправляем на главную страницу после успешной регистрации
+                window.location.href = "main.html"; // Замените на путь к вашей главной странице
             } else {
                 alert("Error registering: " + data.error);
             }
@@ -73,13 +74,17 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => response.json())
         .then(data => {
             console.log("Login response:", data);
-            if (data.token) {
+            if (data.token && data.client_id) {
+                // Сохраняем token и client_id в localStorage
                 localStorage.setItem("token", data.token);
+                localStorage.setItem("client_id", data.client_id);  // Сохраняем client_id
                 alert("Login successful!");
+                window.location.href = "main.html";  // Перенаправление на главную страницу после логина
             } else {
                 alert("Error logging in: " + data.error);
             }
         })
+        
         .catch(error => {
             console.error("Error during login:", error);
             alert("An error occurred during login");

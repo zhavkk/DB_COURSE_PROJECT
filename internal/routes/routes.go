@@ -35,13 +35,12 @@ func SetupRoutes(r *mux.Router) {
 	)
 	r.Handle("/clients", clientsHandler).Methods("GET", "OPTIONS")
 
-	// /service_requests - администратор и сотрудник
-	serviceRequestsHandler := auth.TokenVerifyMiddleware(
-		auth.RoleMiddleware(1, 2)(
-			http.HandlerFunc(controllers.GetServiceRequestsHandler),
+	createServiceRequestHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(2, 3)(
+			http.HandlerFunc(controllers.CreateServiceRequestHandler),
 		),
 	)
-	r.Handle("/service_requests", serviceRequestsHandler).Methods("GET", "OPTIONS")
+	r.Handle("/service_requests", createServiceRequestHandler).Methods("POST", "OPTIONS")
 
 	// /service_reports - администратор и сотрудник
 	serviceReportsHandler := auth.TokenVerifyMiddleware(
@@ -58,14 +57,6 @@ func SetupRoutes(r *mux.Router) {
 		),
 	)
 	r.Handle("/service_requests/{id:[0-9]+}", serviceRequestByIDHandler).Methods("GET", "OPTIONS")
-
-	// Создание заявки - клиент и сотрудник
-	createServiceRequestHandler := auth.TokenVerifyMiddleware(
-		auth.RoleMiddleware(2, 3)(
-			http.HandlerFunc(controllers.CreateServiceRequestHandler),
-		),
-	)
-	r.Handle("/service_requests", createServiceRequestHandler).Methods("POST", "OPTIONS")
 
 	// Создание отчёта - сотрудник и администратор
 	createServiceReportHandler := auth.TokenVerifyMiddleware(

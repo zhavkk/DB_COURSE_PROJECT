@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание заявки на услугу</title>
+    <script src="app.js" defer></script>  <!-- Подключаем внешний JS файл -->
+</head>
+<body>
+    <h1>Запрос на услугу</h1>
+
+    <!-- Форма для ввода текста -->
+    <form id="serviceRequestForm">
+        <label for="serviceName">Название услуги:</label>
+        <input type="text" id="serviceName" name="service_name" required><br><br>
+
+        <label for="description">Описание услуги:</label><br>
+        <textarea id="description" name="description" rows="4" cols="50" required></textarea><br><br>
+
+        <button type="submit">Отправить запрос</button>
+    </form>
+
+    <script>
+        // Обработчик отправки формы
+        document.getElementById("serviceRequestForm").addEventListener("submit", function(event) {
+            event.preventDefault();  // Отменяем стандартную отправку формы
+
+            // Получаем данные из формы
+            const serviceName = document.getElementById("serviceName").value;
+            const description = document.getElementById("description").value;
+
+            // Получаем client_id и token из localStorage
+            const clientId = localStorage.getItem("client_id"); // Получаем ID клиента
+            const token = localStorage.getItem("token");         // Получаем токен
+
+            // Проверяем, если client_id или token отсутствуют, выводим сообщение
+            if (!clientId || !token) {
+                alert("Ошибка: Не удалось найти данные для клиента или токен. Пожалуйста, авторизуйтесь.");
+                return;
+            }
+
+            // Данные для запроса на услугу
+            const data = {
+                service_name: serviceName,
+                description: description,
+                client_id: clientId,  // Используем client_id из localStorage
+                service_id: 1,        // Например, можно задать ID услуги, если нужно
+                status: 0,            // Статус заявки (например, 0 - в процессе)
+                request_date: new Date().toISOString()  // Текущая дата запроса
+            };
+
+            // Отправка POST-запроса на сервер
+            fetch("http://localhost:8080/service_requests", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`  // Токен для авторизации
+                },
+                body: JSON.stringify(data)  // Отправляем данные в формате JSON
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Response from server:", data);
+                alert("Заявка успешно отправлена!");
+                document.getElementById("serviceRequestForm").reset();  // Очищаем форму
+            })
+            .catch(error => {
+                console.error("Error during request:", error);
+                alert("Произошла ошибка при отправке данных");
+            });
+        });
+    </script>
+</body>
+</html>

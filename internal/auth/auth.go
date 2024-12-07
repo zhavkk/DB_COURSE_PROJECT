@@ -146,9 +146,11 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Отправка успешного ответа с токеном
 	log.Printf("User logged in successfully: %s", credentials.Login)
-	utils.ResponseWithJson(w, http.StatusOK, map[string]string{"token": token})
+	utils.ResponseWithJson(w, http.StatusOK, map[string]interface{}{
+		"token":     token,
+		"client_id": user.ID, // Добавляем client_id в ответ
+	})
 }
 
 // HashPassword хеширует пароль с использованием bcrypt

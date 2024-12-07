@@ -63,24 +63,18 @@ func RoleMiddleware(allowedRoles ...int64) func(http.Handler) http.Handler {
 	}
 }
 
-// CORS middleware добавляет заголовки для разрешения CORS запросов
+// CORS middleware
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Разрешаем доступ для всех источников
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8000")            // Разрешаем все источники
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS") // Разрешаем методы
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")     // Разрешаем заголовки
+		w.Header().Set("Access-Control-Allow-Origin", "*") // Разрешаем запросы с любого источника
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Если это preflight запрос (OPTIONS), сразу возвращаем успешный ответ
 		if r.Method == http.MethodOptions {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			w.WriteHeader(http.StatusOK) // Отправляем успешный ответ для preflight
+			w.WriteHeader(http.StatusOK) // Для предзапросов возвращаем статус 200
 			return
 		}
 
-		// Для всех остальных запросов передаем дальше
 		next.ServeHTTP(w, r)
 	})
 }
