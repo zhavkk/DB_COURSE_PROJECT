@@ -91,3 +91,82 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 });
+
+document.getElementById('loadServicesBtn').addEventListener('click', loadServices);
+
+function loadServices() {
+    fetch('http://localhost:8080/services', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'), // Токен, если он хранится в localStorage
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Ошибка при загрузке услуг');
+    })
+    .then(services => {
+        renderServicesTable(services);
+    })
+    .catch(error => {
+        console.error(error);
+        alert('Не удалось загрузить услуги');
+    });
+}
+
+function renderServicesTable(services) {
+    const tableBody = document.querySelector('#servicesTable tbody');
+    tableBody.innerHTML = ''; // Очищаем таблицу перед добавлением новых данных
+    
+    services.forEach(service => {
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${service.id}</td>
+            <td>${service.service_type}</td>
+            <td>${service.duration}</td>
+            <td><button onclick="bookService(${service.id})">Записаться</button></td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Показываем таблицу с услугами
+    document.getElementById('servicesTableContainer').style.display = 'block';
+}
+
+function bookService(serviceId) {
+    // Предположим, что у нас есть токен и id клиента в localStorage
+    const clientId = localStorage.getItem('clientId'); 
+    if (!clientId) {
+        alert('Вы должны быть авторизованы как клиент');
+        return;
+    }
+
+    fetch('http://localhost:8080/service_requests', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+        },
+        body: JSON.stringify({
+            client_id: clientId,
+            service_id: serviceId,
+            status: 0,  // Статус "в процессе"
+            request_date: new Date().toISOString().split('T')[0],  // Текущая дата
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Вы успешно записались на услугу!');
+        } else {
+            throw new Error('Не удалось записаться на услугу');
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        alert('Ошибка при записи на услугу');
+    });
+}

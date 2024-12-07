@@ -4,6 +4,12 @@ CREATE TABLE "user_roles" (
     "role_name" VARCHAR(255) NOT NULL  -- Роль (например, клиент, сотрудник, администратор)
 );
 
+-- Добавляем роли в таблицу user_roles
+INSERT INTO "user_roles" ("id", "role_name") VALUES 
+(1, 'admin'),    -- Роль администратор
+(2, 'employee'), -- Роль сотрудник
+(3, 'client');   -- Роль клиент
+
 -- Создание таблицы пользователей
 CREATE TABLE "users" (
     "id" BIGSERIAL PRIMARY KEY,  -- Теперь id будет автоинкрементом
@@ -42,6 +48,12 @@ CREATE TABLE "services" (
     "service_type" TEXT NOT NULL,
     "duration" INT NOT NULL  -- Тип данных для длительности
 );
+-- Вставка данных в таблицу services
+INSERT INTO "services" ("service_type", "duration") VALUES
+('Массаж', 15),
+('Грязевые ванны', 40),
+('Капельница', 60);
+
 
 -- Создание таблицы заявок на услуги
 CREATE TABLE "service_requests" (
