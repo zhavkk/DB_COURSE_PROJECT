@@ -8,8 +8,9 @@ import (
 // CreateServiceRequest - создание новой заявки на услугу
 func CreateServiceRequest(request *models.ServiceRequest) error {
 	query := `INSERT INTO service_requests (client_id, service_id, status, request_date, completion_date)
-              VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	err := DB.QueryRow(query, request.ClientID, request.ServiceID, request.Status, request.RequestDate, request.CompletionDate).Scan(&request.ID)
+
 	if err != nil {
 		return err
 	}

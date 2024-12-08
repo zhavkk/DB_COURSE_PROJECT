@@ -17,6 +17,18 @@ func CreateClient(client *models.Client) error {
 	return nil
 }
 
+// Предположим, что у вас есть соединение с базой данных db
+
+func GetClientIdFromUserId(userId int64) (int64, error) {
+	var clientId int64
+	query := "SELECT id FROM clients WHERE user_id = $1"
+	err := DB.QueryRow(query, userId).Scan(&clientId)
+	if err != nil {
+		return 0, err // Возвращаем ошибку, если клиент не найден
+	}
+	return clientId, nil
+}
+
 func GetClientByID(id int64) (*models.Client, error) {
 	query := `SELECT id,name,birth_date,address,medical_needs,preferences,user_id FROM clients WHERE id = $1`
 	row := DB.QueryRow(query, id)

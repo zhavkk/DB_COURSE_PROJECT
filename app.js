@@ -36,7 +36,6 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 alert("Registration successful!");
-                // Перенаправляем на главную страницу после успешной регистрации
                 window.location.href = "main.html"; // Замените на путь к вашей главной странице
             } else {
                 alert("Error registering: " + data.error);
@@ -74,23 +73,52 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => response.json())
         .then(data => {
             console.log("Login response:", data);
-            if (data.token && data.client_id) {
-                // Сохраняем token и client_id в localStorage
+            if (data.token && data.user_id) {
+                // Сохраняем token и user_id в localStorage
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("client_id", data.client_id);  // Сохраняем client_id
-                alert("Login successful!");
-                window.location.href = "main.html";  // Перенаправление на главную страницу после логина
+                localStorage.setItem("user_id", data.user_id);  // Сохраняем user_id
+
+                // Получаем client_id с сервера
+                getClientIdFromUserId(data.user_id).then(clientId => {
+                    localStorage.setItem("client_id", clientId);  // Сохраняем client_id
+                    alert("Login successful!");
+                    window.location.href = "main.html";  // Перенаправление на главную страницу после логина
+                }).catch(error => {
+                    console.error("Error fetching client_id:", error);
+                    alert("Не удалось получить client_id");
+                });
             } else {
                 alert("Error logging in: " + data.error);
             }
         })
-        
         .catch(error => {
             console.error("Error during login:", error);
             alert("An error occurred during login");
         });
     });
 });
+
+// Получение client_id по user_id
+function getClientIdFromUserId(userId) {
+    return fetch(`http://localhost:8080/getClientId?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.client_id) {
+            return data.client_id;
+        } else {
+            throw new Error('Client not found');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching client_id:', error);
+        throw error;
+    });
+}
 
 document.getElementById('loadServicesBtn').addEventListener('click', loadServices);
 
@@ -138,10 +166,12 @@ function renderServicesTable(services) {
 }
 
 function bookService(serviceId) {
-    // Предположим, что у нас есть токен и id клиента в localStorage
-    const clientId = localStorage.getItem('clientId'); 
-    if (!clientId) {
-        alert('Вы должны быть авторизованы как клиент');
+    // Предположим, что у нас есть token и client_id в localStorage
+    const clientId = localStorage.getItem('client_id'); 
+    const token = localStorage.getItem('token');
+
+    if (!clientId || !token) {
+        alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
         return;
     }
 
@@ -149,14 +179,16 @@ function bookService(serviceId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'Authorization': 'Bearer ' + token,
         },
         body: JSON.stringify({
-            client_id: clientId,
-            service_id: serviceId,
-            status: 0,  // Статус "в процессе"
-            request_date: new Date().toISOString().split('T')[0],  // Текущая дата
+            client_id: parseInt(clientId),  // Преобразуем в число
+            service_id: parseInt(serviceId),  // Преобразуем в число
+            status: 0,  // В процессе
+            request_date: new Date().toISOString(),  // Формат ISO с временем
+            completion_date: null // Используем null, если дата не указана
         })
+        
     })
     .then(response => {
         if (response.ok) {

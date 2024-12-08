@@ -60,6 +60,34 @@ func GetClientsHandler(w http.ResponseWriter, r *http.Request) {
 	utils.ResponseWithJson(w, http.StatusOK, clients)
 }
 
+func GetClientByUSERIDHandler(w http.ResponseWriter, r *http.Request) {
+	userId := r.URL.Query().Get("user_id")
+
+	if userId == "" {
+		http.Error(w, "user_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем userId в int64
+	userIdInt64, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid user_id", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем client_id из базы данных
+	clientId, err := db.GetClientIdFromUserId(userIdInt64)
+	if err != nil {
+		http.Error(w, "Client not found", http.StatusNotFound)
+		return
+	}
+
+	// Отправляем client_id в ответе
+	response := map[string]int64{"client_id": clientId}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // GetClientHandler возвращает клиента по ID
 func GetClientHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDFromPath(r, "id")

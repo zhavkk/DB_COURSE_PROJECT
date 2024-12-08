@@ -55,17 +55,17 @@ INSERT INTO "services" ("service_type", "duration") VALUES
 ('Капельница', 60);
 
 
--- Создание таблицы заявок на услуги
 CREATE TABLE "service_requests" (
-    "id" BIGSERIAL PRIMARY KEY,  -- Используем BIGSERIAL для автоинкремента
+    "id" BIGSERIAL PRIMARY KEY,  -- Автоинкремент
     "client_id" BIGINT NOT NULL,  -- Связь с клиентом
     "service_id" BIGINT NOT NULL,  -- Связь с услугой
     "status" INT NOT NULL,  -- Статус заявки (например, в процессе или завершено)
-    "request_date" DATE NOT NULL,  -- Дата подачи заявки
+    "request_date" TIMESTAMP NOT NULL,  -- Дата и время подачи заявки
     "completion_date" DATE,  -- Дата завершения (может быть NULL)
     FOREIGN KEY ("client_id") REFERENCES "clients" ("id"),
     FOREIGN KEY ("service_id") REFERENCES "services" ("id")
 );
+
 
 -- Создание таблицы отчетов о выполнении услуги
 CREATE TABLE "service_reports" (
