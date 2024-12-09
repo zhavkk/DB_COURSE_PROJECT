@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявки сотрудников</title>
+</head>
+<body>
+    <h1>Список заявок</h1>
+    
+    <button id="loadRequestsBtn">Загрузить заявки</button>
+
+    <div id="requestsTableContainer" style="display: none;">
+        <table id="requestsTable">
+            <thead>
+                <tr>
+                    <th>Услуга</th>
+                    <th>Клиент</th>
+                    <th>Статус</th>
+                    <th>Назначить сотрудника</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Здесь будут отображаться заявки -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Обработчик для кнопки "Загрузить заявки"
+        document.getElementById('loadRequestsBtn').addEventListener('click', loadRequests);
+
+        function loadRequests() {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
+                return;
+            }
+
+            // Запрос для получения всех заявок
+            fetch('http://localhost:8080/service_requests', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(requests => {
+                renderRequestsTable(requests);
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Не удалось загрузить заявки');
+            });
+        }
+
+        function renderRequestsTable(requests) {
+            const tableBody = document.querySelector('#requestsTable tbody');
+            tableBody.innerHTML = '';  // Очищаем таблицу
+            console.log(requests);  // Посмотреть, что приходит с сервера
+
+            requests.forEach(request => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${request.service_type}</td>  <!-- Используем service_type -->
+                    <td>${request.client_id}</td>
+                    <td>${request.status === 0 ? 'Не рассмотрена' : request.status === 1 ? 'В процессе' : 'Завершена'}</td>
+                    <td><button onclick="assignEmployee(${request.id})">Назначить сотрудника</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('requestsTableContainer').style.display = 'block';
+        }
+
+        // Назначение сотрудника на заявку
+        function assignEmployee(requestId) {
+            const token = localStorage.getItem('token');
+            const userId = localStorage.getItem('user_id');
+            const userRole = localStorage.getItem('user_role');
+
+            if (!token || !userId || userRole !== '1' && userRole !== '2') {  // Только для сотрудников
+                alert('Вы не имеете прав для выполнения этого действия.');
+                return;
+            }
+
+            const data = {
+                request_id: parseInt(requestId),
+                employee_id: parseInt(userId)
+            };
+
+            // Отправляем запрос на добавление записи в service_request_employees
+            fetch('http://localhost:8080/create_service_request_employees', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Вы успешно назначены на заявку!');
+                } else {
+                    alert('Не удалось назначить сотрудника');
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Ошибка при назначении сотрудника');
+            });
+        }
+
+        // // Функция для обновления статуса заявки на "Завершено"
+        // function updateRequestStatus(requestId) {
+        //     const token = localStorage.getItem('token');
+        //     fetch(`http://localhost:8080/update_request_status/${requestId}`, {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //             'Authorization': 'Bearer ' + token
+        //         },
+        //     })
+        //     .then(response => {
+        //         if (response.ok) {
+        //             alert('Статус заявки обновлен на "Завершено"');
+        //             loadRequests();  // Перезагружаем заявки, чтобы отобразился новый статус
+        //         } else {
+        //             alert('Не удалось обновить статус заявки');
+        //         }
+        //     })
+        //     .catch(error => {
+        //         console.error(error);
+        //         alert('Ошибка при обновлении статуса заявки');
+        //     });
+        // }
+    </script>
+</body>
+</html>

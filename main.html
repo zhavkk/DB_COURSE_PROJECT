@@ -31,9 +31,11 @@
             // В зависимости от роли, выбираем нужный id
             if (userRole == '3') { // Клиент
                 userId = localStorage.getItem("client_id");
-            } else if (userRole == '1' || userRole == '2') { // Сотрудник или Администратор
+            } else if (userRole == '2') { // Сотрудник или Администратор
                 userId = localStorage.getItem("employee_id");
-            } else {
+            } else if( userRole == '1'){
+                userId = localStorage.getItem("admin_id");
+            }else {
                 alert("Неверная роль пользователя");
                 return;
             }
@@ -50,7 +52,32 @@
 
         // Прочие кнопки
         document.getElementById("button2").addEventListener("click", function() {
-            alert("Вы нажали кнопку 2");
+            const token = localStorage.getItem("token");
+            const userRole = localStorage.getItem("user_role");
+
+            if(!token || !userRole){
+                alert("Вы не авторизованы.Пожалуйста, войдите в систему.");
+                return;
+            }
+            let userId;
+            if(userRole == '3'){ // Клиент
+                userId = localStorage.getItem("client_id");
+            }else if (userRole=='2'){
+                userId = localStorage.getItem("employee_id");
+            }else if (userRole == '1'){
+                userId = localStorage.getItem("admin_id");
+            }else{
+                alert("Неверная роль пользователя");
+                return;
+            }
+
+            if(!userId){
+                alert("Не удалось получить идентификатор пользователя");
+            }
+            localStorage.setItem("user_id",userId);
+            window.location.href="service_request_employees.html";
+
+
         });
 
         document.getElementById("button3").addEventListener("click", function() {

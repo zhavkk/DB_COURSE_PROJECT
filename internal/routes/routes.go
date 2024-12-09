@@ -17,6 +17,20 @@ func SetupRoutes(r *mux.Router) {
 	r.HandleFunc("/login", auth.LoginUser).Methods("POST", "OPTIONS")
 	r.HandleFunc("/register", auth.RegisterUser).Methods("POST", "OPTIONS")
 
+	GetClientByUSERIDHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2, 3)(
+			http.HandlerFunc(controllers.GetClientByUSERIDHandler),
+		),
+	)
+	r.Handle("/getClientId", GetClientByUSERIDHandler).Methods("GET", "OPTIONS")
+
+	GetEmployeeByUSERIDHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2, 3)(
+			http.HandlerFunc(controllers.GetEmployeeByUSERIDHandler),
+		),
+	)
+	r.Handle("/getEmployeeId", GetEmployeeByUSERIDHandler).Methods("GET", "OPTIONS")
+
 	// Защищённые маршруты для пользователей, доступные только после аутентификации
 
 	// /users - только администратор
@@ -34,19 +48,6 @@ func SetupRoutes(r *mux.Router) {
 		),
 	)
 	r.Handle("/clients", clientsHandler).Methods("GET", "OPTIONS")
-	GetClientByUSERIDHandler := auth.TokenVerifyMiddleware(
-		auth.RoleMiddleware(1, 2, 3)(
-			http.HandlerFunc(controllers.GetClientByUSERIDHandler),
-		),
-	)
-	r.Handle("/getClientId", GetClientByUSERIDHandler).Methods("GET", "OPTIONS")
-
-	GetEmployeeByUSERIDHandler := auth.TokenVerifyMiddleware(
-		auth.RoleMiddleware(1, 2, 3)(
-			http.HandlerFunc(controllers.GetEmployeeByUSERIDHandler),
-		),
-	)
-	r.Handle("/getEmployeeId", GetEmployeeByUSERIDHandler).Methods("GET", "OPTIONS")
 
 	GetServicesHandler := auth.TokenVerifyMiddleware(
 		auth.RoleMiddleware(2, 3)(
@@ -60,8 +61,21 @@ func SetupRoutes(r *mux.Router) {
 			http.HandlerFunc(controllers.CreateServiceRequestHandler),
 		),
 	)
-	r.Handle("/service_requests", createServiceRequestHandler).Methods("POST", "OPTIONS")
+	r.Handle("/create_service_requests", createServiceRequestHandler).Methods("POST", "OPTIONS")
 
+	GetAllServiceRequests := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.GetServiceRequestsHandler),
+		),
+	)
+	r.Handle("/service_requests", GetAllServiceRequests).Methods("GET", "OPTIONS")
+
+	createServiceRequestEmployeeHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.CreateServiceRequestEmployeeHandler),
+		),
+	)
+	r.Handle("/create_service_request_employees", createServiceRequestEmployeeHandler).Methods("POST", "OPTIONS")
 	// /service_reports - администратор и сотрудник
 	serviceReportsHandler := auth.TokenVerifyMiddleware(
 		auth.RoleMiddleware(1, 2)(

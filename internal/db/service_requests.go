@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"dbproject/internal/models"
+	"log"
 )
 
 // CreateServiceRequest - создание новой заявки на услугу
@@ -42,6 +43,23 @@ func UpdateServiceRequest(request *models.ServiceRequest) error {
 	_, err := DB.Exec(query, request.ClientID, request.ServiceID, request.Status, request.RequestDate, request.CompletionDate, request.ID)
 	return err
 }
+func UpdateStatusServiceRequest(request *models.ServiceRequest) error {
+	// Логируем входные данные
+	log.Printf("Updating status for request_id: %d, status: %d", request.ID, request.Status)
+
+	// Выполняем SQL-запрос для обновления статуса заявки
+	query := `UPDATE service_requests SET status=$2 WHERE id=$1`
+	_, err := DB.Exec(query, request.ID, request.Status)
+	if err != nil {
+		// Логируем ошибку
+		log.Printf("Error updating status for request_id: %d: %v", request.ID, err)
+		return err
+	}
+
+	// Логируем успешное обновление
+	log.Printf("Successfully updated status for request_id: %d", request.ID)
+	return nil
+}
 
 // DeleteServiceRequest - удаление заявки по ID
 func DeleteServiceRequest(id int64) error {
@@ -52,7 +70,7 @@ func DeleteServiceRequest(id int64) error {
 
 // GetAllServiceRequests - получение всех заявок
 func GetAllServiceRequests() ([]models.ServiceRequest, error) {
-	query := `SELECT id, client_id, service_id, status, request_date, completion_date FROM service_requests`
+	query := `SELECT sr.id, sr.client_id, sr.service_id, sr.status, sr.request_date, s.service_type FROM service_requests as sr JOIN services s ON sr.service_id = s.id`
 	rows, err := DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -62,7 +80,7 @@ func GetAllServiceRequests() ([]models.ServiceRequest, error) {
 	var requests []models.ServiceRequest
 	for rows.Next() {
 		var request models.ServiceRequest
-		err := rows.Scan(&request.ID, &request.ClientID, &request.ServiceID, &request.Status, &request.RequestDate, &request.CompletionDate)
+		err := rows.Scan(&request.ID, &request.ClientID, &request.ServiceID, &request.Status, &request.RequestDate, &request.ServiceType)
 		if err != nil {
 			return nil, err
 		}

@@ -11,4 +11,6 @@ type ServiceRequest struct {
 	Status         int        `json:"status"` // Статус заявки (0 - в процессе, 1 - завершено)
 	RequestDate    time.Time  `json:"request_date"`
 	CompletionDate *time.Time `json:"completion_date"` // Для возможного NULL значения
+	ServiceType    string     `json:"service_type"`    // Добавьте это поле
+
 }

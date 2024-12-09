@@ -84,11 +84,13 @@
             }
             // Проверяем роль и получаем нужный id
             if (userRole == '3') { // Клиент
-                userId = localStorage.getItem('client_id');
-            } else if (userRole == '1' || userRole == '2') { // Сотрудник или Администратор
-                userId = localStorage.getItem('employee_id');
-            } else {
-                alert('Неверная роль пользователя');
+                userId = localStorage.getItem("client_id");
+            } else if (userRole == '2') { // Сотрудник или Администратор
+                userId = localStorage.getItem("employee_id");
+            } else if( userRole == '1'){
+                userId = localStorage.getItem("admin_id");
+            }else {
+                alert("Неверная роль пользователя");
                 return;
             }
 
@@ -106,7 +108,7 @@
             };
             console.log(requestData);
 
-            fetch('http://localhost:8080/service_requests', {
+            fetch('http://localhost:8080/create_service_requests', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
