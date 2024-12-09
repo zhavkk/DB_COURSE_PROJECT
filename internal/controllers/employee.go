@@ -6,6 +6,7 @@ import (
 	"dbproject/internal/utils"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -43,6 +44,37 @@ func GetEmployeeByIDHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.ResponseWithJson(w, http.StatusOK, employee)
+}
+func GetEmployeeByUSERIDHandler(w http.ResponseWriter, r *http.Request) {
+	userId := r.URL.Query().Get("user_id")
+
+	if userId == "" {
+		http.Error(w, "user_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем userId в int64
+	userIdInt64, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid user_id", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем eployee_id из базы данных
+	employeeId, err := db.GetEmployeeIdFromUserId(userIdInt64)
+	if err != nil {
+		// Возвращаем ошибку в формате JSON
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		errorResponse := map[string]string{"error": "Employee not found"}
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Отправляем employee_id в ответе
+	response := map[string]int64{"employee_id": employeeId}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // CreateEmployeeHandler создаёт нового сотрудника

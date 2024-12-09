@@ -8,28 +8,43 @@
 <body>
     <h1>Добро пожаловать на главную страницу!</h1>
     <div>
-        <button id="button1">Кнопка 1</button>
+        <button id="button1">Перейти к заявке</button>
         <button id="button2">Кнопка 2</button>
         <button id="button3">Кнопка 3</button>
         <button id="button4">Кнопка 4</button>
+        <button id="logoutButton">Выйти</button> <!-- Кнопка для выхода -->
     </div>
 
     <script>
-        // Обработчик для кнопки 1
+        // Обработчик для кнопки "Перейти к заявке"
         document.getElementById("button1").addEventListener("click", function() {
-            // Получаем client_id и token из localStorage
-            const clientId = localStorage.getItem("client_id");
             const token = localStorage.getItem("token");
+            const userRole = localStorage.getItem("user_role");
 
-            // Проверяем, если client_id или token отсутствуют, выводим сообщение
-            if (!clientId || !token) {
+            if (!token || !userRole) {
                 alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
                 return;
             }
 
-            // Переходим на страницу создания заявки и сохраняем client_id в localStorage
-            localStorage.setItem("client_id", clientId);  // Сохраняем client_id в localStorage
-            localStorage.setItem("token", token);  // Сохраняем token в localStorage
+            let userId;
+
+            // В зависимости от роли, выбираем нужный id
+            if (userRole == '3') { // Клиент
+                userId = localStorage.getItem("client_id");
+            } else if (userRole == '1' || userRole == '2') { // Сотрудник или Администратор
+                userId = localStorage.getItem("employee_id");
+            } else {
+                alert("Неверная роль пользователя");
+                return;
+            }
+
+            if (!userId) {
+                alert("Не удалось получить идентификатор пользователя.");
+                return;
+            }
+
+            // Сохраняем идентификатор и переходим на страницу заявки
+            localStorage.setItem("user_id", userId);
             window.location.href = "service_request.html";  // Переходим на страницу заявки
         });
 
@@ -37,11 +52,26 @@
         document.getElementById("button2").addEventListener("click", function() {
             alert("Вы нажали кнопку 2");
         });
+
         document.getElementById("button3").addEventListener("click", function() {
             alert("Вы нажали кнопку 3");
         });
+
         document.getElementById("button4").addEventListener("click", function() {
             alert("Вы нажали кнопку 4");
+        });
+
+        // Обработчик для кнопки "Выйти"
+        document.getElementById("logoutButton").addEventListener("click", function() {
+            // Очищаем данные из localStorage
+            localStorage.removeItem("token");
+            localStorage.removeItem("user_id");
+            localStorage.removeItem("user_role");
+            localStorage.removeItem("client_id");
+            localStorage.removeItem("employee_id");
+
+            alert("Вы успешно вышли из системы.");
+            window.location.href = "index.html";  // Переход на страницу входа (например)
         });
     </script>
 </body>

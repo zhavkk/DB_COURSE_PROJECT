@@ -36,9 +36,9 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 alert("Registration successful!");
-                window.location.href = "main.html"; // Замените на путь к вашей главной странице
+                //window.location.href = "main.html"; // Замените на путь к вашей главной странице
             } else {
-                alert("Error registering: " + data.error);
+                alert("Error registering: " + (data.error || 'Unknown error'));
             }
         })
         .catch(error => {
@@ -55,10 +55,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const login = document.getElementById("loginLogin").value;
         const password = document.getElementById("loginPassword").value;
-
+        
         const data = {
             login: login,
             password: password
+            // user_role: user_role // Не нужно передавать здесь user_role, так как он будет возвращен сервером
         };
 
         console.log("Sending login data:", data);
@@ -73,22 +74,42 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => response.json())
         .then(data => {
             console.log("Login response:", data);
-            if (data.token && data.user_id) {
-                // Сохраняем token и user_id в localStorage
+            
+            // Проверим, что в ответе есть нужные данные
+            if (data.token && data.user_id && data.user_role) {
+                // Сохраняем token, user_id и user_role в localStorage
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("user_id", data.user_id);  // Сохраняем user_id
+                localStorage.setItem("user_id", data.user_id);  
+                localStorage.setItem("user_role", data.user_role.toString());  // Сохраняем user_role как строку
 
-                // Получаем client_id с сервера
-                getClientIdFromUserId(data.user_id).then(clientId => {
-                    localStorage.setItem("client_id", clientId);  // Сохраняем client_id
-                    alert("Login successful!");
-                    window.location.href = "main.html";  // Перенаправление на главную страницу после логина
-                }).catch(error => {
-                    console.error("Error fetching client_id:", error);
-                    alert("Не удалось получить client_id");
-                });
+                // В зависимости от роли выполняем соответствующие действия
+                if (data.user_role === 3) { // Пользователь — клиент
+                    getClientIdFromUserId(data.user_id)
+                    .then(clientId => {
+                        localStorage.setItem("client_id", clientId);
+                        alert("Login successful!");
+                        window.location.href = "main.html";
+                    })
+                    .catch(error => {
+                        console.error("Error fetching client_id:", error);
+                        alert("Не удалось получить client_id");
+                    });
+                } else if (data.user_role === 1 || data.user_role === 2) { // Пользователь — сотрудник или администратор
+                    getEmployeeIdFromUserId(data.user_id)
+                    .then(employeeId => {
+                        localStorage.setItem("employee_id", employeeId);
+                        alert("Login successful!");
+                        window.location.href = "main.html";
+                    })
+                    .catch(error => {
+                        console.error("Error fetching employee_id:", error);
+                        alert("Не удалось получить employee_id");
+                    });
+                } else {
+                    alert("Неизвестная роль пользователя");
+                }
             } else {
-                alert("Error logging in: " + data.error);
+                alert("Error logging in: " + (data.error || 'Missing required data'));
             }
         })
         .catch(error => {
@@ -120,85 +141,23 @@ function getClientIdFromUserId(userId) {
     });
 }
 
-document.getElementById('loadServicesBtn').addEventListener('click', loadServices);
-
-function loadServices() {
-    fetch('http://localhost:8080/services', {
+function getEmployeeIdFromUserId(userId) {
+    return fetch(`http://localhost:8080/getEmployeeId?user_id=${userId}`, {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token'), // Токен, если он хранится в localStorage
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
         }
     })
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        }
-        throw new Error('Ошибка при загрузке услуг');
-    })
-    .then(services => {
-        renderServicesTable(services);
-    })
-    .catch(error => {
-        console.error(error);
-        alert('Не удалось загрузить услуги');
-    });
-}
-
-function renderServicesTable(services) {
-    const tableBody = document.querySelector('#servicesTable tbody');
-    tableBody.innerHTML = ''; // Очищаем таблицу перед добавлением новых данных
-    
-    services.forEach(service => {
-        const row = document.createElement('tr');
-        
-        row.innerHTML = `
-            <td>${service.id}</td>
-            <td>${service.service_type}</td>
-            <td>${service.duration}</td>
-            <td><button onclick="bookService(${service.id})">Записаться</button></td>
-        `;
-        
-        tableBody.appendChild(row);
-    });
-    
-    // Показываем таблицу с услугами
-    document.getElementById('servicesTableContainer').style.display = 'block';
-}
-
-function bookService(serviceId) {
-    // Предположим, что у нас есть token и client_id в localStorage
-    const clientId = localStorage.getItem('client_id'); 
-    const token = localStorage.getItem('token');
-
-    if (!clientId || !token) {
-        alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
-        return;
-    }
-
-    fetch('http://localhost:8080/service_requests', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-        },
-        body: JSON.stringify({
-            client_id: parseInt(clientId),  // Преобразуем в число
-            service_id: parseInt(serviceId),  // Преобразуем в число
-            status: 0,  // В процессе
-            request_date: new Date().toISOString(),  // Формат ISO с временем
-            completion_date: null // Используем null, если дата не указана
-        })
-        
-    })
-    .then(response => {
-        if (response.ok) {
-            alert('Вы успешно записались на услугу!');
+    .then(response => response.json())
+    .then(data => {
+        if (data.employee_id) {
+            return data.employee_id;
         } else {
-            throw new Error('Не удалось записаться на услугу');
+            throw new Error('Employee not found');
         }
     })
     .catch(error => {
-        console.error(error);
-        alert('Ошибка при записи на услугу');
+        console.error('Error fetching client_id:', error);
+        throw error;
     });
 }

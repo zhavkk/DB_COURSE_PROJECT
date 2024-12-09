@@ -33,6 +33,7 @@
 
         function loadServices() {
             const token = localStorage.getItem('token');
+            const userRole = localStorage.getItem('user_role');
             
             if (!token) {
                 alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
@@ -73,24 +74,37 @@
         }
 
         function bookService(serviceId) {
-            const clientId = localStorage.getItem('client_id');
             const token = localStorage.getItem('token');
+            const userRole = localStorage.getItem('user_role');
+            let userId;
 
-            if (!clientId || !token) {
+            if (!token || !userRole) {
                 alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
+                return;
+            }
+            // Проверяем роль и получаем нужный id
+            if (userRole == '3') { // Клиент
+                userId = localStorage.getItem('client_id');
+            } else if (userRole == '1' || userRole == '2') { // Сотрудник или Администратор
+                userId = localStorage.getItem('employee_id');
+            } else {
+                alert('Неверная роль пользователя');
+                return;
+            }
+
+            if (!userId) {
+                alert('Не удалось получить идентификатор пользователя.');
                 return;
             }
 
             const requestData = {
-                client_id: parseInt(clientId),  // Преобразуем в число
+                client_id: parseInt(userId),
                 service_id: parseInt(serviceId),  // Преобразуем в число
                 status: 0,  // В процессе
                 request_date: new Date().toISOString(),  // Формат ISO с временем
                 completion_date: null  // Нулевое значение для completion_date
             };
-
-            console.log('Отправляем service_id:', serviceId);
-            console.log('Отправляем client_id:', clientId);
+            console.log(requestData);
 
             fetch('http://localhost:8080/service_requests', {
                 method: 'POST',

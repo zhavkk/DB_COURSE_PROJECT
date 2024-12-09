@@ -148,8 +148,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User logged in successfully: %s", credentials.Login)
 	utils.ResponseWithJson(w, http.StatusOK, map[string]interface{}{
-		"token":   token,
-		"user_id": user.ID, // Добавляем user_id в ответ
+		"token":     token,
+		"user_id":   user.ID, // Добавляем user_id в ответ
+		"user_role": user.RoleID,
 	})
 }
 

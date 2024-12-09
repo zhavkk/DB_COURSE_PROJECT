@@ -44,6 +44,16 @@ func GetAllEmployees() ([]models.Employee, error) {
 	return employees, nil
 }
 
+func GetEmployeeIdFromUserId(userId int64) (int64, error) {
+	var employeeId int64
+	query := "SELECT id FROM employees WHERE user_id = $1"
+	err := DB.QueryRow(query, userId).Scan(&employeeId)
+	if err != nil {
+		return 0, err // Возвращаем ошибку, если клиент не найден
+	}
+	return employeeId, nil
+}
+
 func GetEmployeeByID(id int64) (*models.Employee, error) {
 	query := `SELECT * FROM employees WHERE id = $1`
 	row := DB.QueryRow(query, id)
