@@ -60,6 +60,17 @@ func UpdateStatusServiceRequest(request *models.ServiceRequest) error {
 	log.Printf("Successfully updated status for request_id: %d", request.ID)
 	return nil
 }
+func FinishStatusServiceRequest(requestID int64) error {
+	log.Printf("Updating status to finish for request_id : %d,", requestID)
+	query := `UPDATE service_requests SET status = 2 WHERE id = $1`
+	_, err := DB.Exec(query, requestID)
+	if err != nil {
+		log.Printf("Error updating status for request_id : %d: %v", requestID, err)
+		return err
+	}
+	log.Printf("Successfully updated status for request_id: %d", requestID)
+	return nil
+}
 
 // DeleteServiceRequest - удаление заявки по ID
 func DeleteServiceRequest(id int64) error {

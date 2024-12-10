@@ -3,6 +3,7 @@ package controllers
 import (
 	"dbproject/internal/db"
 	"dbproject/internal/models"
+	"dbproject/internal/utils"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -78,6 +79,32 @@ func GetServiceRequestEmployeesHandler(w http.ResponseWriter, r *http.Request) {
 	// Отправляем список сотрудников в ответе
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(employees)
+}
+func GetServiceRequestsForEmployeeIdHandler(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем employee_id из строки запроса
+	employeeID := r.URL.Query().Get("employee_id")
+	if employeeID == "" {
+		http.Error(w, "Employee ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем employeeID в int64 (предполагаем, что он всегда будет корректным)
+	id, err := strconv.ParseInt(employeeID, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Request received for employee_id: %d", id)
+
+	// Получаем список заявок для указанного сотрудника
+	serviceRequests, err := db.GetServiceRequestsForEmployeeId(id)
+	if err != nil {
+		log.Printf("Error fetching service requests: %v", err)
+	} else {
+		log.Printf("Found %d service requests", len(serviceRequests))
+	}
+	// Возвращаем успешный ответ с данными
+	utils.ResponseWithJson(w, http.StatusOK, serviceRequests)
 }
 
 // DeleteServiceRequestEmployeeHandler - удаление связи между заявкой и сотрудником

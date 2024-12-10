@@ -6,6 +6,9 @@ import (
 	"dbproject/internal/utils"
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 // CreateServiceRequestHandler создает новый запрос на услугу
@@ -90,6 +93,40 @@ func UpdateServiceRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.ResponseWithJson(w, http.StatusOK, serviceRequest)
+}
+func UpdateServiceRequestStatusHandler(w http.ResponseWriter, r *http.Request) {
+	// Получаем token из заголовков
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+		return
+	}
+	// Извлекаем request_id из URL пути
+	vars := mux.Vars(r)
+	requestID := vars["request_id"]
+	if requestID == "" {
+		http.Error(w, "Request ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем requestID в int64
+	id, err := strconv.ParseInt(requestID, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid request ID", http.StatusBadRequest)
+		return
+	}
+
+	// Вызываем функцию для обновления статуса
+	err = db.FinishStatusServiceRequest(id)
+	if err != nil {
+		http.Error(w, "Error updating status", http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем успешный ответ
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Status updated to completed"})
 }
 
 // DeleteServiceRequestHandler удаляет запрос на услугу по ID

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Завершение заявок</title>
+</head>
+<body>
+    <h1>Завершение заявок</h1>
+
+    <div id="requestsTableContainer">
+        <table id="requestsTable">
+            <thead>
+                <tr>
+                    <th>Услуга</th>
+                    <th>Клиент</th>
+                    <th>Статус</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Здесь будут отображаться заявки -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Загрузка заявок сотрудников с статусом "В процессе"
+        document.addEventListener("DOMContentLoaded", function() {
+            const token = localStorage.getItem('token');
+            const employeeID = localStorage.getItem('employee_id');
+
+            if (!token) {
+                alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
+                return;
+            }
+
+            if (!employeeID) {
+                alert('Вы не имеете прав.');
+                window.location.href = "main.html";  // Переход на страницу входа
+                return;
+            }
+
+            // Формируем URL с параметром employee_id
+            const url = `http://localhost:8080/service_request_employees?employee_id=${employeeID}`;
+
+            // Запрос для получения всех заявок с статусом "В процессе"
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(requests => {
+                renderRequestsTable(requests);
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Не удалось загрузить заявки');
+            });
+        });
+
+        // Функция для отображения заявок в таблице
+        function renderRequestsTable(requests) {
+            const tableBody = document.querySelector('#requestsTable tbody');
+            tableBody.innerHTML = '';  // Очищаем таблицу
+
+            requests.forEach(request => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${request.service_type}</td>
+                    <td>${request.client_id}</td>
+                    <td>${request.status === 1 ? 'В процессе' : 'Завершена'}</td>
+                    <td><button onclick="completeRequest(${request.request_id})">Завершить</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+
+       // Завершение заявки (смена статуса на "Завершена")
+        function completeRequest(requestId) {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
+                return;
+            }
+
+            // Отправляем запрос на изменение статуса заявки на "Завершено"
+            fetch(`http://localhost:8080/complete_service_request/${requestId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Статус заявки обновлен на "Завершено"');
+                    location.reload();  // Перезагружаем страницу, чтобы увидеть обновленный статус
+                } else {
+                    alert('Не удалось обновить статус заявки');
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Ошибка при обновлении статуса заявки');
+            });
+        }
+
+    </script>
+</body>
+</html>

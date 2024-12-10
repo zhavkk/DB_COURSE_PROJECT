@@ -88,8 +88,8 @@ CREATE TABLE "service_request_employees" (
 -- Ограничение на проверку даты рождения клиента
 ALTER TABLE "clients" ADD CONSTRAINT "birth_date_check" CHECK ("birth_date" < CURRENT_DATE);
 
--- Ограничение на проверку статуса заявки (0 - в процессе, 1 - завершено)
-ALTER TABLE "service_requests" ADD CONSTRAINT "status_check" CHECK ("status" IN (0, 1));
+-- Ограничение на проверку статуса заявки (0 - Не рассмотрена, 1 - В процессе , 2 - завершено)
+ALTER TABLE "service_requests" ADD CONSTRAINT "status_check" CHECK ("status" IN (0, 1,2));
 
 -- Создание функции для триггера, который будет вставлять данные в таблицы clients или employees
 CREATE OR REPLACE FUNCTION insert_client_or_employee() 

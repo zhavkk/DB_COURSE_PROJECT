@@ -10,13 +10,27 @@
     <div>
         <button id="button1">Перейти к заявке</button>
         <button id="button2">Кнопка 2</button>
-        <button id="button3">Кнопка 3</button>
+        <button id="button3">Завершение заявок</button>
         <button id="button4">Кнопка 4</button>
-        <button id="logoutButton">Выйти</button> <!-- Кнопка для выхода -->
+        <button id="logoutButton">Выйти</button>
     </div>
 
     <script>
-        // Обработчик для кнопки "Перейти к заявке"
+        // Обработчик для кнопки "Завершение заявок"
+        document.getElementById("button3").addEventListener("click", function() {
+            const token = localStorage.getItem("token");
+            const userRole = localStorage.getItem("user_role");
+
+            if (!token || !userRole) {
+                alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+                return;
+            }
+
+            // Запрос для получения заявок сотрудников с статусом "В процессе"
+            window.location.href = "finish_service_request_employees.html"; // Переходим на страницу завершения заявок
+        });
+
+        // Прочие кнопки
         document.getElementById("button1").addEventListener("click", function() {
             const token = localStorage.getItem("token");
             const userRole = localStorage.getItem("user_role");
@@ -76,16 +90,6 @@
             }
             localStorage.setItem("user_id",userId);
             window.location.href="service_request_employees.html";
-
-
-        });
-
-        document.getElementById("button3").addEventListener("click", function() {
-            alert("Вы нажали кнопку 3");
-        });
-
-        document.getElementById("button4").addEventListener("click", function() {
-            alert("Вы нажали кнопку 4");
         });
 
         // Обработчик для кнопки "Выйти"

@@ -76,6 +76,21 @@ func SetupRoutes(r *mux.Router) {
 		),
 	)
 	r.Handle("/create_service_request_employees", createServiceRequestEmployeeHandler).Methods("POST", "OPTIONS")
+
+	GetServiceRequestsForEmployeeId := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.GetServiceRequestsForEmployeeIdHandler),
+		),
+	)
+	r.Handle("/service_request_employees", GetServiceRequestsForEmployeeId).Methods("GET", "OPTIONS")
+
+	UpdateServiceRequestStatusHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 2)(
+			http.HandlerFunc(controllers.UpdateServiceRequestStatusHandler),
+		),
+	)
+	r.Handle("/complete_service_request/{request_id}", UpdateServiceRequestStatusHandler).Methods("POST", "OPTIONS")
+
 	// /service_reports - администратор и сотрудник
 	serviceReportsHandler := auth.TokenVerifyMiddleware(
 		auth.RoleMiddleware(1, 2)(
