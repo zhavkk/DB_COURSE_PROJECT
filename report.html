@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет о выполненной услуге</title>
+</head>
+<body>
+    <h1>Отчет о выполненной услуге</h1>
+
+    <form id="reportForm">
+        <input type="hidden" id="request_id" name="request_id">
+        <textarea id="reportText" name="report_text" placeholder="Опишите выполненную услугу" required></textarea><br>
+        <textarea id="feedback" name="feedback" placeholder="Отзыв клиента" required></textarea><br>
+        <button type="submit">Отправить отчет</button>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Получаем request_id из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestId = urlParams.get('request_id');
+            if (requestId) {
+                document.getElementById('request_id').value = requestId;
+            } else {
+                alert("Request ID is missing");
+                window.location.href = "main.html";  // Если request_id нет в URL, перенаправить на главную страницу
+            }
+
+            // Обработчик отправки формы
+            document.getElementById('reportForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const requestId = document.getElementById('request_id').value;
+                const reportText = document.getElementById('reportText').value;
+                const feedback = document.getElementById('feedback').value;
+                const token = localStorage.getItem('token');
+
+                if (!token) {
+                    alert('Вы не авторизованы');
+                    return;
+                }
+
+                const data = {
+                    request_id: parseInt(requestId),
+                    report_text: reportText,
+                    feedback: feedback
+                };
+
+                // Отправляем запрос на создание отчета
+                fetch('http://localhost:8080/create_service_report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Отчет успешно отправлен');
+                        window.location.href = "main.html";  // Перенаправляем на главную страницу
+                    } else {
+                        alert('Не удалось отправить отчет');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при отправке отчета');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

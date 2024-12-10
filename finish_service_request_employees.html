@@ -99,6 +99,7 @@
                 if (response.ok) {
                     alert('Статус заявки обновлен на "Завершено"');
                     location.reload();  // Перезагружаем страницу, чтобы увидеть обновленный статус
+                    window.location.href = `report.html?request_id=${requestId}`;
                 } else {
                     alert('Не удалось обновить статус заявки');
                 }
