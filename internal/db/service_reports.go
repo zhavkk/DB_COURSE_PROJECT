@@ -38,7 +38,14 @@ func GetServiceReportByID(id int64) (*models.ServiceReport, error) {
 // GetAllServiceReports - получает все отчеты о выполнении услуг
 func GetAllServiceReports() ([]models.ServiceReport, error) {
 	// SQL-запрос для получения всех отчетов
-	query := `SELECT id, request_id, report_text, feedback FROM service_reports`
+	query := `SELECT sr.id, sr.request_id, sr.report_text, sr.feedback, t1.service_type
+	FROM service_reports sr
+	JOIN (
+    	SELECT sr2.id, s.service_type
+    	FROM service_requests sr2
+    	JOIN services s ON sr2.service_id = s.id  -- Указываем условие объединения
+	) AS t1 ON sr.request_id = t1.id;
+	`
 
 	// Выполняем запрос
 	rows, err := DB.Query(query)
@@ -52,7 +59,7 @@ func GetAllServiceReports() ([]models.ServiceReport, error) {
 	var reports []models.ServiceReport
 	for rows.Next() {
 		var report models.ServiceReport
-		err := rows.Scan(&report.ID, &report.RequestID, &report.ReportText, &report.Feedback)
+		err := rows.Scan(&report.ID, &report.RequestID, &report.ReportText, &report.Feedback, &report.ServiceType)
 		if err != nil {
 			log.Println("Error scanning row:", err)
 			return nil, err

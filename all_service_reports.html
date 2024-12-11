@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все отчеты</title>
+</head>
+<body>
+    <h1>Все отчеты о выполненных услугах</h1>
+
+    <!-- Кнопка для загрузки отчетов -->
+    <button id="loadReportsButton">Загрузить отчеты</button>
+
+    <!-- Таблица для отображения отчетов -->
+    <div id="reportsTableContainer">
+        <table id="reportsTable">
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Текст отчета</th>
+                    <th>Обратная связь</th>
+                    <th>Тип услуги</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Здесь будут отображаться отчеты -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Обработчик нажатия на кнопку "Загрузить отчеты"
+        document.getElementById("loadReportsButton").addEventListener("click", function() {
+            const token = localStorage.getItem("token");
+            const userRole = localStorage.getItem("user_role");
+
+            if (!token) {
+                alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+                return;
+            }
+            if (userRole != 1) {
+                alert("Вы не админ.");
+                return;
+            }
+
+            // Запрос для получения всех отчетов
+            fetch('http://localhost:8080/all_service_reports', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(reports => {
+                renderReportsTable(reports);
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Не удалось загрузить отчеты');
+            });
+        });
+
+        // Функция для отображения отчетов в таблице
+        function renderReportsTable(reports) {
+            const tableBody = document.querySelector('#reportsTable tbody');
+            tableBody.innerHTML = '';  // Очищаем таблицу
+
+            // Если отчеты пусты, показываем сообщение
+            if (reports.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4">Нет отчетов</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+
+            // Иначе, выводим все отчеты
+            reports.forEach(report => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${report.request_id}</td>
+                    <td>${report.report_text}</td>
+                    <td>${report.feedback}</td>
+                    <td>${report.service_type}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

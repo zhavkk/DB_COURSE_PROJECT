@@ -14,6 +14,7 @@
                 <tr>
                     <th>Услуга</th>
                     <th>Клиент</th>
+                    <th>Сотрудник</th>
                     <th>Статус</th>
                     <th>Действие</th>
                 </tr>
@@ -25,26 +26,34 @@
     </div>
 
     <script>
-        // Загрузка заявок сотрудников с статусом "В процессе"
         document.addEventListener("DOMContentLoaded", function() {
             const token = localStorage.getItem('token');
             const employeeID = localStorage.getItem('employee_id');
+            const adminID = localStorage.getItem('admin_id');
 
             if (!token) {
                 alert('Вы не авторизованы. Пожалуйста, войдите в систему.');
+                window.location.href = "login.html";  // Переход на страницу входа
                 return;
             }
 
-            if (!employeeID) {
+            if (!employeeID && !adminID) {
                 alert('Вы не имеете прав.');
-                window.location.href = "main.html";  // Переход на страницу входа
+                window.location.href = "main.html";  // Переход на главную страницу
                 return;
             }
 
-            // Формируем URL с параметром employee_id
-            const url = `http://localhost:8080/service_request_employees?employee_id=${employeeID}`;
+            // URL для запроса заявок в зависимости от роли пользователя
+            let url;
+            if (adminID) {
+                // Для администратора загружаем все заявки
+                url = "http://localhost:8080/service_request_employees_for_admins";  // Замените на правильный endpoint для всех заявок
+            } else if (employeeID) {
+                // Для сотрудника загружаем только его заявки   
+                url = `http://localhost:8080/service_request_employees?employee_id=${employeeID}`;
+            }
 
-            // Запрос для получения всех заявок с статусом "В процессе"
+            // Запрос для получения заявок
             fetch(url, {
                 method: 'GET',
                 headers: {
@@ -71,6 +80,7 @@
                 row.innerHTML = `
                     <td>${request.service_type}</td>
                     <td>${request.client_id}</td>
+                    <td>${request.employee_id || 'Не назначен'}</td>
                     <td>${request.status === 1 ? 'В процессе' : 'Завершена'}</td>
                     <td><button onclick="completeRequest(${request.request_id})">Завершить</button></td>
                 `;
@@ -78,8 +88,7 @@
             });
         }
 
-
-       // Завершение заявки (смена статуса на "Завершена")
+        // Завершение заявки (смена статуса на "Завершена")
         function completeRequest(requestId) {
             const token = localStorage.getItem('token');
 

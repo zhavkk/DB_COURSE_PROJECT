@@ -72,6 +72,45 @@ func GetServiceRequestsForEmployeeId(employeeID int64) ([]models.ServiceRequestE
 
 	return requests, nil
 }
+func GetServiceRequestsForAdmins() ([]models.ServiceRequestEmployee, error) {
+	// SQL-запрос для получения заявок для администраторов
+	query := `SELECT t1.request_id, t3.client_id, t1.employee_id, t2.service_type
+	FROM service_request_employees t1
+	JOIN service_requests t3 ON t1.request_id = t3.id
+	JOIN services t2 ON t3.service_id = t2.id;`
+
+	// Выполняем SQL-запрос
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, err // Если возникла ошибка, возвращаем её
+	}
+	defer rows.Close()
+
+	// Срез для хранения результатов
+	var serviceRequests []models.ServiceRequestEmployee
+
+	// Проходим по всем строкам результата
+	for rows.Next() {
+		var request models.ServiceRequestEmployee
+
+		// Считываем данные из каждой строки
+		err := rows.Scan(&request.RequestID, &request.ClientID, &request.EmployeeID, &request.ServiceType)
+		if err != nil {
+			return nil, err // Если ошибка при сканировании строки, возвращаем её
+		}
+
+		// Добавляем считанную заявку в срез
+		serviceRequests = append(serviceRequests, request)
+	}
+
+	// Проверка на ошибки после завершения чтения строк
+	if err := rows.Err(); err != nil {
+		return nil, err // Если ошибка при итерации, возвращаем её
+	}
+
+	// Возвращаем список заявок
+	return serviceRequests, nil
+}
 
 // DeleteServiceRequestEmployee - удаление связи между заявкой и сотрудником
 func DeleteServiceRequestEmployee(requestID, employeeID int64) error {

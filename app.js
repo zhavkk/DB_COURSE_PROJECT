@@ -36,7 +36,6 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 alert("Registration successful!");
-                //window.location.href = "main.html"; // Замените на путь к вашей главной странице
             } else {
                 alert("Error registering: " + (data.error || 'Unknown error'));
             }
@@ -46,7 +45,6 @@ document.addEventListener("DOMContentLoaded", function() {
             alert("An error occurred during registration");
         });
     });
-    
 
     // Обработчик для формы логина
     loginForm.addEventListener("submit", function(event) {
@@ -59,7 +57,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const data = {
             login: login,
             password: password
-            // user_role: user_role // Не нужно передавать здесь user_role, так как он будет возвращен сервером
         };
 
         console.log("Sending login data:", data);
@@ -75,15 +72,12 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(data => {
             console.log("Login response:", data);
             
-            // Проверим, что в ответе есть нужные данные
-            if (data.token && data.user_id && data.user_role) {
-                // Сохраняем token, user_id и user_role в localStorage
+            if (data.token && data.user_id && data.user_role !== undefined) {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("user_id", data.user_id);  
-                localStorage.setItem("user_role", data.user_role.toString());  // Сохраняем user_role как строку
+                localStorage.setItem("user_role", data.user_role.toString()); 
 
-                // В зависимости от роли выполняем соответствующие действия
-                if (data.user_role === 3) { // Пользователь — клиент
+                if (data.user_role === 3) { // Клиент
                     getClientIdFromUserId(data.user_id)
                     .then(clientId => {
                         localStorage.setItem("client_id", clientId);
@@ -94,7 +88,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         console.error("Error fetching client_id:", error);
                         alert("Не удалось получить client_id");
                     });
-                } else if (data.user_role === 1 || data.user_role === 2) { // Пользователь — сотрудник или администратор
+                } else if (data.user_role === 2) { // Сотрудник
                     getEmployeeIdFromUserId(data.user_id)
                     .then(employeeId => {
                         localStorage.setItem("employee_id", employeeId);
@@ -105,8 +99,13 @@ document.addEventListener("DOMContentLoaded", function() {
                         console.error("Error fetching employee_id:", error);
                         alert("Не удалось получить employee_id");
                     });
+                } else if (data.user_role === 1) { // Администратор
+                    localStorage.setItem("admin_id", data.user_id);
+                    alert("Login successful for admin!");
+                    window.location.href = "main.html";
                 } else {
                     alert("Неизвестная роль пользователя");
+                    window.location.href = "index.html";
                 }
             } else {
                 alert("Error logging in: " + (data.error || 'Missing required data'));
@@ -121,10 +120,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Получение client_id по user_id
 function getClientIdFromUserId(userId) {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+
     return fetch(`http://localhost:8080/getClientId?user_id=${userId}`, {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
+            'Authorization': 'Bearer ' + token
         }
     })
     .then(response => response.json())
@@ -134,18 +136,18 @@ function getClientIdFromUserId(userId) {
         } else {
             throw new Error('Client not found');
         }
-    })
-    .catch(error => {
-        console.error('Error fetching client_id:', error);
-        throw error;
     });
 }
 
+// Получение employee_id по user_id
 function getEmployeeIdFromUserId(userId) {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+
     return fetch(`http://localhost:8080/getEmployeeId?user_id=${userId}`, {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
+            'Authorization': 'Bearer ' + token
         }
     })
     .then(response => response.json())
@@ -155,9 +157,5 @@ function getEmployeeIdFromUserId(userId) {
         } else {
             throw new Error('Employee not found');
         }
-    })
-    .catch(error => {
-        console.error('Error fetching client_id:', error);
-        throw error;
     });
 }

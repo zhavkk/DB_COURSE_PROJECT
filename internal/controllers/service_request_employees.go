@@ -107,6 +107,26 @@ func GetServiceRequestsForEmployeeIdHandler(w http.ResponseWriter, r *http.Reque
 	utils.ResponseWithJson(w, http.StatusOK, serviceRequests)
 }
 
+// GetServiceRequestsForAdminsHandler - Обработчик для получения всех заявок для администраторов
+func GetServiceRequestsForAdminsHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверяем, что запрос был отправлен администратором (например, через заголовок Authorization)
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		utils.ResponseWithError(w, http.StatusUnauthorized, "Отсутствует токен авторизации.")
+		return
+	}
+
+	// Получаем все заявки для администраторов
+	serviceRequests, err := db.GetServiceRequestsForAdmins()
+	if err != nil {
+		log.Println("Ошибка при получении заявок:", err)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Ошибка при получении заявок.")
+		return
+	}
+	// Если заявки найдены, отправляем их в ответе
+	utils.ResponseWithJson(w, http.StatusOK, serviceRequests)
+}
+
 // DeleteServiceRequestEmployeeHandler - удаление связи между заявкой и сотрудником
 func DeleteServiceRequestEmployeeHandler(w http.ResponseWriter, r *http.Request) {
 	// Получаем параметры из URL

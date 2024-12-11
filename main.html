@@ -9,9 +9,9 @@
     <h1>Добро пожаловать на главную страницу!</h1>
     <div>
         <button id="button1">Перейти к заявке</button>
-        <button id="button2">Кнопка 2</button>
+        <button id="button2">Взять зявку клиента</button>
         <button id="button3">Завершение заявок</button>
-        <button id="button4">Кнопка 4</button>
+        <button id="button4">Посмотреть все отчеты</button>
         <button id="logoutButton">Выйти</button>
     </div>
 
@@ -28,6 +28,23 @@
 
             // Запрос для получения заявок сотрудников с статусом "В процессе"
             window.location.href = "finish_service_request_employees.html"; // Переходим на страницу завершения заявок
+        });
+        document.getElementById("button4").addEventListener("click", function() {
+            const token = localStorage.getItem("token");
+            const userRole = localStorage.getItem("user_role");
+
+            if (!token) {
+                alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+                return;
+            }
+            if (userRole!=1){
+                alert("Вы не админ.")
+                return;
+            }
+
+
+            // Запрос для получения заявок сотрудников с статусом "В процессе"
+            window.location.href = "all_service_reports.html"; // Переходим на страницу завершения заявок
         });
 
         // Прочие кнопки
@@ -100,6 +117,8 @@
             localStorage.removeItem("user_role");
             localStorage.removeItem("client_id");
             localStorage.removeItem("employee_id");
+            localStorage.removeItem("admin_id");
+
 
             alert("Вы успешно вышли из системы.");
             window.location.href = "index.html";  // Переход на страницу входа (например)

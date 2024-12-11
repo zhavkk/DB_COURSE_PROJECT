@@ -50,14 +50,14 @@ func SetupRoutes(r *mux.Router) {
 	r.Handle("/clients", clientsHandler).Methods("GET", "OPTIONS")
 
 	GetServicesHandler := auth.TokenVerifyMiddleware(
-		auth.RoleMiddleware(2, 3)(
+		auth.RoleMiddleware(1, 2, 3)(
 			http.HandlerFunc(controllers.GetServicesHandler),
 		),
 	)
 	r.Handle("/services", GetServicesHandler).Methods("GET", "OPTIONS")
 
 	createServiceRequestHandler := auth.TokenVerifyMiddleware(
-		auth.RoleMiddleware(2, 3)(
+		auth.RoleMiddleware(1, 2, 3)(
 			http.HandlerFunc(controllers.CreateServiceRequestHandler),
 		),
 	)
@@ -83,7 +83,12 @@ func SetupRoutes(r *mux.Router) {
 		),
 	)
 	r.Handle("/service_request_employees", GetServiceRequestsForEmployeeId).Methods("GET", "OPTIONS")
-
+	GetServiceRequestsForAdminsHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1)(
+			http.HandlerFunc(controllers.GetServiceRequestsForAdminsHandler),
+		),
+	)
+	r.Handle("/service_request_employees_for_admins", GetServiceRequestsForAdminsHandler).Methods("GET", "OPTIONS")
 	UpdateServiceRequestStatusHandler := auth.TokenVerifyMiddleware(
 		auth.RoleMiddleware(1, 2)(
 			http.HandlerFunc(controllers.UpdateServiceRequestStatusHandler),
@@ -114,6 +119,13 @@ func SetupRoutes(r *mux.Router) {
 		),
 	)
 	r.Handle("/service_reports", createServiceReportHandler).Methods("POST", "OPTIONS")
+
+	GetAllServiceReportsHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1)(
+			http.HandlerFunc(controllers.GetAllServiceReportsHandler),
+		),
+	)
+	r.Handle("/all_service_reports", GetAllServiceReportsHandler).Methods("GET", "OPTIONS")
 
 	// /employees - только администратор
 	employeesHandler := auth.TokenVerifyMiddleware(
