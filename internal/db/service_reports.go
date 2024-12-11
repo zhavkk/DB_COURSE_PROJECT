@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"dbproject/internal/models"
 	"log"
+	"time"
 )
 
 // CreateServiceReport - создание нового отчета о выполненной услуге
@@ -38,6 +39,7 @@ func GetServiceReportByID(id int64) (*models.ServiceReport, error) {
 // GetAllServiceReports - получает все отчеты о выполнении услуг
 func GetAllServiceReports() ([]models.ServiceReport, error) {
 	// SQL-запрос для получения всех отчетов
+	time.Sleep(10 * time.Millisecond)
 	query := `SELECT sr.id, sr.request_id, sr.report_text, sr.feedback, t1.service_type
 	FROM service_reports sr
 	JOIN (

@@ -7,17 +7,35 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 // GetAllServiceReportsHandler возвращает список всех отчетов
 func GetAllServiceReportsHandler(w http.ResponseWriter, r *http.Request) {
-	reports, err := db.GetAllServiceReports()
-	if err != nil {
-		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving service reports: "+err.Error())
-		return
-	}
+	resultChan := make(chan []models.ServiceReport)
+	errChan := make(chan error)
 
-	utils.ResponseWithJson(w, http.StatusOK, reports)
+	go func() {
+		reports, err := db.GetAllServiceReports()
+		if err != nil {
+			errChan <- err
+			return
+		}
+		resultChan <- reports
+	}()
+	select {
+	case reports := <-resultChan:
+		// Если запрос выполнен успешно
+		log.Println("StatusOK for admin")
+		utils.ResponseWithJson(w, http.StatusOK, reports)
+	case err := <-errChan:
+		// Если произошла ошибка
+		log.Println("Error retrieving requests:", err)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving service requests: "+err.Error())
+	case <-time.After(30 * time.Second):
+		// Если операция длится слишком долго
+		utils.ResponseWithError(w, http.StatusRequestTimeout, "Request timed out")
+	}
 }
 
 // GetServiceReportByIDHandler возвращает отчет по ID

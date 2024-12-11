@@ -1,6 +1,9 @@
 package db
 
-import "dbproject/internal/models"
+import (
+	"dbproject/internal/models"
+	"time"
+)
 
 // CreateServiceRequestEmployee - создание связи между заявкой и сотрудником
 func CreateServiceRequestEmployee(requestID, employeeID int64) error {
@@ -73,6 +76,7 @@ func GetServiceRequestsForEmployeeId(employeeID int64) ([]models.ServiceRequestE
 	return requests, nil
 }
 func GetServiceRequestsForAdmins() ([]models.ServiceRequestEmployee, error) {
+	time.Sleep(10 * time.Millisecond)
 	// SQL-запрос для получения заявок для администраторов
 	query := `SELECT t1.request_id, t3.client_id, t1.employee_id, t2.service_type
 	FROM service_request_employees t1

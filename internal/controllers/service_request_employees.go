@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -115,16 +116,31 @@ func GetServiceRequestsForAdminsHandler(w http.ResponseWriter, r *http.Request) 
 		utils.ResponseWithError(w, http.StatusUnauthorized, "Отсутствует токен авторизации.")
 		return
 	}
+	resultChan := make(chan []models.ServiceRequestEmployee)
+	errChan := make(chan error)
 
-	// Получаем все заявки для администраторов
-	serviceRequests, err := db.GetServiceRequestsForAdmins()
-	if err != nil {
-		log.Println("Ошибка при получении заявок:", err)
-		utils.ResponseWithError(w, http.StatusInternalServerError, "Ошибка при получении заявок.")
-		return
+	go func() {
+		serviceRequests, err := db.GetServiceRequestsForAdmins()
+		if err != nil {
+			errChan <- err
+			return
+		}
+		resultChan <- serviceRequests
+	}()
+	select {
+	case serviceRequests := <-resultChan:
+		// Если запрос выполнен успешно
+		log.Println("StatusOK for admin")
+		utils.ResponseWithJson(w, http.StatusOK, serviceRequests)
+	case err := <-errChan:
+		// Если произошла ошибка
+		log.Println("Error retrieving requests:", err)
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Error retrieving service requests: "+err.Error())
+	case <-time.After(30 * time.Second):
+		// Если операция длится слишком долго
+		utils.ResponseWithError(w, http.StatusRequestTimeout, "Request timed out")
 	}
-	// Если заявки найдены, отправляем их в ответе
-	utils.ResponseWithJson(w, http.StatusOK, serviceRequests)
+
 }
 
 // DeleteServiceRequestEmployeeHandler - удаление связи между заявкой и сотрудником
