@@ -52,21 +52,6 @@ func CreateServiceReportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // Получаем токен из заголовка
-	// tokenString := r.Header.Get("Authorization")
-	// if tokenString == "" {
-	// 	http.Error(w, "Authorization header missing", http.StatusUnauthorized)
-	// 	return
-	// }
-
-	// // Проверяем токен (это пример, вы можете добавить свою логику)
-	// token, err := jwt.Parse(tokenString, nil) // Здесь нужно проверить токен
-	// log.Println("TOKEN : ", token)
-	// if err != nil || !token.Valid {
-	// 	http.Error(w, "Invalid token", http.StatusUnauthorized)
-	// 	return
-	// }
-
 	// Сохраняем отчет в базе данных
 	err = db.CreateServiceReport(&report)
 	if err != nil {
