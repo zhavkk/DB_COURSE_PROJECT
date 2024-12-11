@@ -14,6 +14,7 @@ func CreateServiceReport(report *models.ServiceReport) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("succesful created service report for %d", report.ID)
 	return nil
 }
 

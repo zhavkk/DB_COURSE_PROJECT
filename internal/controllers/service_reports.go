@@ -5,9 +5,8 @@ import (
 	"dbproject/internal/models"
 	"dbproject/internal/utils"
 	"encoding/json"
+	"log"
 	"net/http"
-
-	"github.com/golang-jwt/jwt"
 )
 
 // GetAllServiceReportsHandler возвращает список всех отчетов
@@ -53,19 +52,20 @@ func CreateServiceReportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем токен из заголовка
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
-		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
-		return
-	}
+	// // Получаем токен из заголовка
+	// tokenString := r.Header.Get("Authorization")
+	// if tokenString == "" {
+	// 	http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	// Проверяем токен (это пример, вы можете добавить свою логику)
-	token, err := jwt.Parse(tokenString, nil) // Здесь нужно проверить токен
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
+	// // Проверяем токен (это пример, вы можете добавить свою логику)
+	// token, err := jwt.Parse(tokenString, nil) // Здесь нужно проверить токен
+	// log.Println("TOKEN : ", token)
+	// if err != nil || !token.Valid {
+	// 	http.Error(w, "Invalid token", http.StatusUnauthorized)
+	// 	return
+	// }
 
 	// Сохраняем отчет в базе данных
 	err = db.CreateServiceReport(&report)
@@ -73,6 +73,7 @@ func CreateServiceReportHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to save report", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Created service report in bd for id : %d", report.ID)
 
 	// Возвращаем успешный ответ
 	w.WriteHeader(http.StatusOK)
