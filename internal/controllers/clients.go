@@ -6,6 +6,7 @@ import (
 	"dbproject/internal/utils"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -110,33 +111,33 @@ func GetClientHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateClientHandler обновляет информацию о клиенте
+// UpdateClientHandler обновляет информацию о клиенте
 func UpdateClientHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := parseIDFromPath(r, "id")
+	params := mux.Vars(r)
+	clientId := params["id"]
+
+	// Проверка токена (псевдокод, нужно реализовать логику)
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		utils.ResponseWithError(w, http.StatusUnauthorized, "Неверный токен")
+		return
+	}
+
+	var updatedClient models.Client
+	err := json.NewDecoder(r.Body).Decode(&updatedClient)
 	if err != nil {
-		utils.ResponseWithError(w, http.StatusBadRequest, err.Error())
+		utils.ResponseWithError(w, http.StatusBadRequest, "Ошибка при декодировании данных")
 		return
 	}
 
-	var client models.Client
-	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
-		utils.ResponseWithError(w, http.StatusBadRequest, "Invalid input: "+err.Error())
+	// Обновляем клиента в базе данных
+	err = db.UpdateClient(clientId, updatedClient)
+	if err != nil {
+		utils.ResponseWithError(w, http.StatusInternalServerError, "Ошибка при обновлении данных клиента")
 		return
 	}
-
-	// Валидация клиента
-	if err := validate.Struct(client); err != nil {
-		utils.ResponseWithError(w, http.StatusBadRequest, "Validation error: "+err.Error())
-		return
-	}
-
-	client.ID = id
-
-	if err := db.UpdateClient(&client); err != nil {
-		utils.ResponseWithError(w, http.StatusInternalServerError, "Error updating client: "+err.Error())
-		return
-	}
-
-	utils.ResponseWithJson(w, http.StatusOK, client)
+	log.Printf("updated for cliend id %s", clientId)
+	utils.ResponseWithJson(w, http.StatusOK, map[string]string{"message": "Данные успешно обновлены"})
 }
 
 // DeleteClientHandler удаляет клиента по ID

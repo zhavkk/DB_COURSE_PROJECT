@@ -72,9 +72,10 @@ func GetAllClients() ([]models.Client, error) {
 
 }
 
-func UpdateClient(client *models.Client) error {
-	query := `UPDATE clients SET name =$1,birth_date = $2,address = $3,medical_needs =$4,preferences = $5,user_id =$6 WHERE id = $7`
-	_, err := DB.Exec(query, client.Name, client.BirthDate, client.Address, client.MedicalNeeds, client.Preferences, client.UserID, client.ID)
+// Обновление данных клиента
+func UpdateClient(clientId string, updatedClient models.Client) error {
+	query := `UPDATE clients SET name = $1, birth_date = $2, address = $3, medical_needs = $4 WHERE id = $5`
+	_, err := DB.Exec(query, updatedClient.Name, updatedClient.BirthDate, updatedClient.Address, updatedClient.MedicalNeeds, clientId)
 	return err
 }
 

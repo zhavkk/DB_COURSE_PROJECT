@@ -9,9 +9,10 @@
     <h1>Добро пожаловать на главную страницу!</h1>
     <div>
         <button id="button1">Перейти к заявке</button>
-        <button id="button2">Взять зявку клиента</button>
+        <button id="button2">Взять заявку клиента</button>
         <button id="button3">Завершение заявок</button>
         <button id="button4">Посмотреть все отчеты</button>
+        <button id="button5">Обновить свои данные</button> <!-- Кнопка для обновления данных -->
         <button id="logoutButton">Выйти</button>
     </div>
 
@@ -29,6 +30,7 @@
             // Запрос для получения заявок сотрудников с статусом "В процессе"
             window.location.href = "finish_service_request_employees.html"; // Переходим на страницу завершения заявок
         });
+
         document.getElementById("button4").addEventListener("click", function() {
             const token = localStorage.getItem("token");
             const userRole = localStorage.getItem("user_role");
@@ -37,14 +39,13 @@
                 alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
                 return;
             }
-            if (userRole!=1){
+            if (userRole != 1) {
                 alert("Вы не админ.")
                 return;
             }
 
-
             // Запрос для получения заявок сотрудников с статусом "В процессе"
-            window.location.href = "all_service_reports.html"; // Переходим на страницу завершения заявок
+            window.location.href = "all_service_reports.html"; // Переходим на страницу отчетов
         });
 
         // Прочие кнопки
@@ -64,9 +65,9 @@
                 userId = localStorage.getItem("client_id");
             } else if (userRole == '2') { // Сотрудник или Администратор
                 userId = localStorage.getItem("employee_id");
-            } else if( userRole == '1'){
+            } else if( userRole == '1'){ // Администратор
                 userId = localStorage.getItem("admin_id");
-            }else {
+            } else {
                 alert("Неверная роль пользователя");
                 return;
             }
@@ -87,17 +88,17 @@
             const userRole = localStorage.getItem("user_role");
 
             if(!token || !userRole){
-                alert("Вы не авторизованы.Пожалуйста, войдите в систему.");
+                alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
                 return;
             }
             let userId;
             if(userRole == '3'){ // Клиент
                 userId = localStorage.getItem("client_id");
-            }else if (userRole=='2'){
+            } else if (userRole == '2'){ // Сотрудник
                 userId = localStorage.getItem("employee_id");
-            }else if (userRole == '1'){
+            } else if (userRole == '1'){ // Администратор
                 userId = localStorage.getItem("admin_id");
-            }else{
+            } else {
                 alert("Неверная роль пользователя");
                 return;
             }
@@ -105,8 +106,38 @@
             if(!userId){
                 alert("Не удалось получить идентификатор пользователя");
             }
-            localStorage.setItem("user_id",userId);
-            window.location.href="service_request_employees.html";
+            localStorage.setItem("user_id", userId);
+            window.location.href = "service_request_employees.html"; // Переходим на страницу для сотрудников
+        });
+
+        // Обработчик для кнопки "Обновить свои данные"
+        document.getElementById("button5").addEventListener("click", function() {
+            const token = localStorage.getItem("token");
+            const userRole = localStorage.getItem("user_role");
+
+            if (!token || !userRole) {
+                alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+                return;
+            }
+
+            let userId;
+
+            // В зависимости от роли, выбираем нужный id для клиента
+            if (userRole == '3') { // Клиент
+                userId = localStorage.getItem("client_id");
+            } else {
+                alert("Только клиенты могут обновить свои данные.");
+                return;
+            }
+
+            if (!userId) {
+                alert("Не удалось получить идентификатор клиента.");
+                return;
+            }
+
+            // Сохраняем идентификатор и переходим на страницу редактирования данных клиента
+            localStorage.setItem("user_id", userId);
+            window.location.href = "edit_client.html"; // Переходим на страницу редактирования клиента
         });
 
         // Обработчик для кнопки "Выйти"
@@ -119,9 +150,8 @@
             localStorage.removeItem("employee_id");
             localStorage.removeItem("admin_id");
 
-
             alert("Вы успешно вышли из системы.");
-            window.location.href = "index.html";  // Переход на страницу входа (например)
+            window.location.href = "index.html";  // Переход на страницу входа
         });
     </script>
 </body>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактирование клиента</title>
+</head>
+<body>
+    <h1>Редактировать информацию о клиенте</h1>
+
+    <form id="editClientForm">
+        <label for="name">Имя:</label>
+        <input type="text" id="name" name="name" required><br>
+
+        <label for="birth_date">Дата рождения:</label>
+        <input type="date" id="birth_date" name="birth_date" required><br>
+
+        <label for="address">Адрес:</label>
+        <input type="text" id="address" name="address" required><br>
+
+        <label for="medical_needs">Медицинские нужды:</label>
+        <input type="text" id="medical_needs" name="medical_needs" required><br>
+
+        <button type="submit">Сохранить изменения</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const clientId = localStorage.getItem('client_id');
+            const token = localStorage.getItem('token');
+            
+            if (!clientId) {
+                alert('Не указан id клиента');
+                return;
+            }
+
+            if (!token) {
+                alert('Вы не авторизованы.');
+                return;
+            }
+
+            // Получаем текущие данные клиента
+            fetch(`http://localhost:8080/client/${clientId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token  // Отправляем токен в заголовке
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Ошибка авторизации. Пожалуйста, войдите в систему.');
+                    } else if (response.status === 404) {
+                        throw new Error('Клиент не найден.');
+                    } else {
+                        throw new Error('Неизвестная ошибка при получении данных клиента.');
+                    }
+                }
+                return response.json();
+            })
+            .then(client => {
+                document.getElementById('name').value = client.name;
+                document.getElementById('birth_date').value = client.birth_date;
+                document.getElementById('address').value = client.address;
+                document.getElementById('medical_needs').value = client.medical_needs;
+            })
+            .catch(err => {
+                console.error('Ошибка при получении данных клиента:', err);
+                alert('Не удалось получить данные клиента: ' + err.message);
+            });
+
+            // Отправка формы на сервер для обновления данных клиента
+            document.getElementById('editClientForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const updatedClient = {
+                    name: document.getElementById('name').value,
+                    birth_date: document.getElementById('birth_date').value,
+                    address: document.getElementById('address').value,
+                    medical_needs: document.getElementById('medical_needs').value
+                };
+
+                // Отправляем обновленные данные на сервер
+                fetch(`http://localhost:8080/client/${clientId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(updatedClient)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Не удалось обновить данные клиента.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        window.location.href = "main.html"; // Переходим на главную страницу
+                    } else {
+                        alert('Не удалось обновить данные.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Ошибка при обновлении данных:', err);
+                    alert('Не удалось обновить данные: ' + err.message);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

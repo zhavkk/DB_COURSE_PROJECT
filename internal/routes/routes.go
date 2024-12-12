@@ -49,6 +49,19 @@ func SetupRoutes(r *mux.Router) {
 	)
 	r.Handle("/clients", clientsHandler).Methods("GET", "OPTIONS")
 
+	getClientHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 3)(
+			http.HandlerFunc(controllers.GetClientHandler),
+		),
+	)
+	r.Handle("/client/{id}", getClientHandler).Methods("GET", "OPTIONS")
+
+	UpdateClientHandler := auth.TokenVerifyMiddleware(
+		auth.RoleMiddleware(1, 3)(
+			http.HandlerFunc(controllers.UpdateClientHandler),
+		),
+	)
+	r.Handle("/client/{id}", UpdateClientHandler).Methods("PUT", "OPTIONS")
 	GetServicesHandler := auth.TokenVerifyMiddleware(
 		auth.RoleMiddleware(1, 2, 3)(
 			http.HandlerFunc(controllers.GetServicesHandler),
